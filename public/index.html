@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpiritEXE</title>
+<meta name="description" content="SpiritEXE: a group of friends making random things, like Lanternfall, a co-op VR game for Meta Quest.">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/">Spirit<span>EXE</span></a>
+    <nav><a href="#lanternfall">Lanternfall</a><a href="#download">Download</a><a href="#updates">Updates</a><a href="/rgs/">RGS</a></nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <h1>SpiritEXE</h1>
+      <p>A group of friends making random things.</p>
+    </div>
+  </div>
+
+  <section id="lanternfall">
+    <div class="wrap">
+      <div class="game">
+        <div>
+          <h3>Lanternfall</h3>
+          <span class="tag">Meta Quest 3</span><span class="tag">Co-op, up to 5</span><span class="tag">Beta</span>
+          <p>Mine an endless cave under a giant glass lantern with your friends. Haul ore back up, upgrade your
+            gear, and keep the Lantern lit when the monsters come out of the trees.</p>
+          <ul>
+            <li>Dig deeper for rarer ore, with pickaxes and drills</li>
+            <li>Fly your backpack thrusters, or walk and teleport</li>
+            <li>Fight off waves of monsters with the Lantern's light beam</li>
+            <li>Public lobbies, or private ones with a code</li>
+          </ul>
+        </div>
+        <div class="lantern-art" role="img" aria-label="A glowing lantern"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <h2>Download the beta</h2>
+      <div class="card download">
+        <p style="margin-top:0">Lanternfall is in a closed beta. Enter your beta key to download the newest build.</p>
+        <form id="unlock" class="row">
+          <input id="key" class="key" placeholder="Beta key" autocomplete="off" required>
+          <button class="primary" id="go">Download</button>
+        </form>
+        <div id="msg" class="msg"></div>
+        <p class="small">The download is an Android APK. Install it using whatever method you use (for example SideQuest).</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="updates">
+    <div class="wrap">
+      <h2>Updates</h2>
+      <div id="versions" class="versions"><p class="small">Loading...</p></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">© SpiritEXE · Lanternfall is in beta and things will change.</div></footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const say = (text, kind = "") => { $("msg").className = "msg " + kind; $("msg").textContent = text; };
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const mb = (n) => (n / 1024 / 1024).toFixed(0) + " MB";
+
+$("unlock").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("go").disabled = true;
+  say("Checking your key...");
+  try {
+    const res = await fetch("/api/unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: $("key").value }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    say(`Downloading Lanternfall ${data.version} (${mb(data.size)})...`, "ok");
+    location.href = data.url;
+  } catch (err) {
+    say(err.message || "Something went wrong.", "err");
+  } finally {
+    $("go").disabled = false;
+  }
+});
+
+(async () => {
+  try {
+    const { versions } = await fetch("/api/versions").then((r) => r.json());
+    $("versions").innerHTML = versions.length
+      ? versions.map((v, i) => `<div class="version"><h3>Lanternfall ${esc(v.version)}${i === 0 ? ' <span class="small">· newest</span>' : ""}</h3>
+          <div class="when">${new Date(v.published_at * 1000).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</div>
+          ${v.notes ? `<p>${esc(v.notes)}</p>` : ""}</div>`).join("")
+      : '<p class="small">No builds released yet.</p>';
+  } catch {
+    $("versions").innerHTML = '<p class="small">Couldn\'t load updates.</p>';
+  }
+})();
+</script>
+</body>
+</html>

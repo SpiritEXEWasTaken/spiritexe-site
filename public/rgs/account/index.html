@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RGS Account</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --text:#e6e8ee; --dim:#9aa3b2; --accent:#f0b24a; --bad:#e5634f; --good:#5cc98a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width:460px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; color:var(--accent); letter-spacing:.04em; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  .sub { color:var(--dim); margin:0 0 20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  input, button { font:inherit; color:var(--text); background:#0f1218; border:1px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; }
+  input { margin-bottom:10px; }
+  button { cursor:pointer; background:#232836; }
+  button.primary { background:var(--accent); color:#1a1205; border-color:var(--accent); font-weight:600; }
+  button.small { width:auto; padding:6px 10px; font-size:14px; }
+  .code { font-size:28px; text-align:center; letter-spacing:.2em; text-transform:uppercase; }
+  .msg { min-height:22px; color:var(--dim); margin-top:8px; }
+  .msg.err { color:var(--bad); }
+  .msg.ok { color:var(--good); }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button.on { border-color:var(--accent); color:var(--accent); }
+  .nudge { border-color:var(--accent); }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .dim { color:var(--dim); font-size:14px; }
+  pre { background:#11141a; padding:10px; border-radius:8px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>RGS ACCOUNT</h1>
+  <p class="sub">Your account for games on this server.</p>
+
+  <section id="auth" class="card">
+    <div class="tabs"><button id="tabIn" class="on">Sign in</button><button id="tabUp">Create account</button></div>
+    <form id="authForm">
+      <input id="user" placeholder="Username" autocomplete="username" required>
+      <input id="pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" required>
+      <input id="mfa" class="hidden" placeholder="Code from your authenticator app" inputmode="numeric" autocomplete="one-time-code">
+      <button class="primary" id="authBtn">Sign in</button>
+    </form>
+    <div id="authMsg" class="msg"></div>
+  </section>
+
+  <section id="home" class="hidden">
+    <div class="card">
+      <h2>Signed in as <span id="who"></span></h2>
+      <span class="dim" id="roleLine"></span>
+    </div>
+
+    <div class="card">
+      <h2>Sign in on a headset</h2>
+      <p class="dim" style="margin-top:0">Type the code the game shows you.</p>
+      <input id="deviceCode" class="code" placeholder="ABC-DEF" maxlength="7" autocomplete="off">
+      <button class="primary" id="approveBtn">Approve</button>
+      <div id="deviceMsg" class="msg"></div>
+    </div>
+
+    <div id="mfaCard" class="card">
+      <h2>Two-factor login (2FA)</h2>
+      <div id="mfaOff">
+        <p class="dim" style="margin-top:0">Recommended. Protects your account even if someone learns your password.</p>
+        <button id="mfaStart">Turn on 2FA</button>
+        <div id="mfaSetup" class="hidden" style="margin-top:12px">
+          <p class="dim" style="margin:0 0 6px">Add this key to an authenticator app, then type the code it shows.</p>
+          <p><code id="mfaSecret" style="word-break:break-all"></code><br><a id="mfaLink" style="color:var(--accent)">Open in authenticator app</a></p>
+          <input id="mfaCode" placeholder="6-digit code" inputmode="numeric">
+          <button class="primary" id="mfaConfirm">Confirm</button>
+        </div>
+        <div id="mfaCodes" class="hidden">
+          <p style="margin:10px 0 6px"><b>Save these recovery codes.</b> Each works once if you lose your phone. They won't be shown again.</p>
+          <pre id="mfaCodeList"></pre>
+        </div>
+      </div>
+      <div id="mfaOn" class="hidden">
+        <p style="margin-top:0;color:var(--good)">2FA is on.</p>
+        <input id="mfaOffCode" placeholder="Code (to turn it off)" inputmode="numeric">
+        <button id="mfaDisable">Turn off 2FA</button>
+      </div>
+      <div id="mfaMsg" class="msg"></div>
+    </div>
+
+    <div id="badgeCard" class="card hidden">
+      <h2>Staff badge</h2>
+      <p class="dim" style="margin-top:0">Shown under your name in games, so players know you're staff.</p>
+      <button id="badgeBtn"></button>
+    </div>
+
+    <div class="card">
+      <h2>Where you're signed in</h2>
+      <div id="sessions"></div>
+    </div>
+
+    <button id="signOut">Sign out</button>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+// Which RGS server this account is on: /rgs/account/?server=<id> (games link here with the
+// right id). Requests go through the website's relay to that server.
+const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/D/g, "");
+const API = "/rgs/s/" + SERVER + "/api/v1";
+const TOKEN_KEY = "rgsToken:" + SERVER;
+if (!SERVER) {
+  document.querySelector("main").innerHTML = `<div style="max-width:460px;margin:60px auto;text-align:center"><h2>Which server?</h2>
+    <p style="color:#9aa3b2">Open this page from the link your game shows, or from <a href="/rgs/servers/" style="color:#f0b24a">your servers</a> if you run one.</p></div>`;
+  throw new Error("no server chosen");
+}
+let token = localStorage.getItem(TOKEN_KEY) || "";
+let mode = "in", ticket = null, me = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    method: opts.method || "GET",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || res.statusText);
+  return data;
+}
+const say = (el, text, kind = "") => { el.className = "msg " + kind; el.textContent = text; };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+function setMode(m) {
+  mode = m; ticket = null; $("mfa").classList.add("hidden");
+  $("tabIn").classList.toggle("on", m === "in"); $("tabUp").classList.toggle("on", m === "up");
+  $("authBtn").textContent = m === "in" ? "Sign in" : "Create account";
+  say($("authMsg"), "");
+}
+$("tabIn").onclick = () => setMode("in");
+$("tabUp").onclick = () => setMode("up");
+
+$("authForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  try {
+    let r;
+    if (ticket) r = await api("/auth/login/2fa", { method: "POST", body: { ticket, code: $("mfa").value } });
+    else if (mode === "up") r = await api("/auth/register", { method: "POST", body: { username: $("user").value, password: $("pass").value } });
+    else r = await api("/auth/login", { method: "POST", body: { username: $("user").value, password: $("pass").value } });
+    if (r.mfa_required) {
+      ticket = r.ticket; $("mfa").classList.remove("hidden"); $("mfa").focus();
+      say($("authMsg"), "Enter the code from your authenticator app.");
+      return;
+    }
+    token = r.token; localStorage.setItem(TOKEN_KEY, token);
+    showHome();
+  } catch (err) { say($("authMsg"), err.message, "err"); }
+});
+
+async function showHome() {
+  try { me = await api("/auth/me"); }
+  catch { token = ""; localStorage.removeItem(TOKEN_KEY); $("auth").classList.remove("hidden"); $("home").classList.add("hidden"); return; }
+  $("auth").classList.add("hidden"); $("home").classList.remove("hidden");
+  $("who").textContent = me.username;
+  $("roleLine").textContent = me.role === "player" ? "" : "Staff: " + me.role;
+  $("mfaOff").classList.toggle("hidden", me.mfa_enabled);
+  $("mfaOn").classList.toggle("hidden", !me.mfa_enabled);
+  $("mfaCard").classList.toggle("nudge", !me.mfa_enabled);
+  $("badgeCard").classList.toggle("hidden", me.role === "player");
+  $("badgeBtn").textContent = me.show_badge ? "Hide my badge" : "Show my badge";
+  const code = new URLSearchParams(location.search).get("code");
+  if (code && !$("deviceCode").value) $("deviceCode").value = code;
+  loadSessions();
+}
+
+$("approveBtn").onclick = async () => {
+  try {
+    await api("/device/approve", { method: "POST", body: { user_code: $("deviceCode").value } });
+    say($("deviceMsg"), "Approved. Your headset is signing in now.", "ok"); $("deviceCode").value = ""; loadSessions();
+  } catch (err) { say($("deviceMsg"), err.message, "err"); }
+};
+
+$("mfaStart").onclick = async () => {
+  try {
+    const s = await api("/auth/2fa/setup", { method: "POST" });
+    $("mfaSecret").textContent = s.secret.replace(/(.{4})/g, "$1 ").trim();
+    $("mfaLink").href = s.otpauth_url;
+    $("mfaSetup").classList.remove("hidden"); $("mfaStart").classList.add("hidden");
+  } catch (err) { say($("mfaMsg"), err.message, "err"); }
+};
+$("mfaConfirm").onclick = async () => {
+  try {
+    const r = await api("/auth/2fa/confirm", { method: "POST", body: { code: $("mfaCode").value } });
+    $("mfaSetup").classList.add("hidden");
+    $("mfaCodeList").textContent = r.recovery_codes.join("\n"); $("mfaCodes").classList.remove("hidden");
+    say($("mfaMsg"), "2FA is on.", "ok");
+  } catch (err) { say($("mfaMsg"), err.message, "err"); }
+};
+$("mfaDisable").onclick = async () => {
+  if (!confirm("Turn off 2FA? Your account will be less safe.")) return;
+  try { await api("/auth/2fa/disable", { method: "POST", body: { code: $("mfaOffCode").value } }); say($("mfaMsg"), "2FA is off."); showHome(); }
+  catch (err) { say($("mfaMsg"), err.message, "err"); }
+};
+
+$("badgeBtn").onclick = async () => {
+  me = await api("/auth/me/settings", { method: "POST", body: { show_badge: !me.show_badge } });
+  $("badgeBtn").textContent = me.show_badge ? "Hide my badge" : "Show my badge";
+};
+
+async function loadSessions() {
+  const { sessions } = await api("/auth/sessions");
+  $("sessions").innerHTML = sessions.map(s => `<div class="row"><div>${esc(s.kind === "web" ? "Website" : s.kind === "admin" ? "Admin panel" : s.kind)}${s.current ? " <span class='dim'>(this one)</span>" : ""}<br><span class="dim">since ${new Date(s.created_at * 1000).toLocaleDateString()}</span></div>${s.current ? "" : `<button class="small" data-revoke="${s.id}">Sign out</button>`}</div>`).join("");
+  document.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { await api("/auth/sessions/" + b.dataset.revoke, { method: "DELETE" }); loadSessions(); });
+}
+
+$("signOut").onclick = async () => {
+  try { await api("/auth/logout", { method: "POST" }); } catch {}
+  token = ""; localStorage.removeItem(TOKEN_KEY); location.href = location.pathname + "?server=" + SERVER;
+};
+
+if (token) showHome();
+</script>
+</body>
+</html>

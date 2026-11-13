@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SpiritEXE Admin</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  main { padding: 28px 0 60px; }
+  .card { margin-bottom: 16px; }
+  .card h2 { font-size: 24px; margin: 0 0 12px; }
+  label { display: block; font-size: 14px; color: var(--dim); margin: 10px 0 4px; }
+  input, textarea { width: 100%; }
+  textarea { min-height: 90px; resize: vertical; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--dim); font-weight: 500; font-size: 13px; }
+  .scroll { overflow-x: auto; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); white-space: nowrap; }
+  .pill.on { color: var(--good); border-color: var(--good); }
+  .pill.off { color: var(--bad); border-color: var(--bad); }
+  .bar { height: 10px; background: #0e1118; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .bar div { height: 100%; width: 0; background: var(--glow); transition: width .2s; }
+  .narrow { max-width: 420px; margin: 40px auto; }
+  code.secret { font-size: 17px; letter-spacing: .08em; word-break: break-all; }
+  .actions button { padding: 6px 10px; font-size: 14px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="brand" href="/">Spirit<span>EXE</span> admin</a><nav><span id="who" class="small"></span> <a href="#" id="logout" class="hidden">Sign out</a></nav></div></header>
+<main class="wrap">
+
+  <!-- First run: create the first admin with the setup key. -->
+  <section id="setup" class="card narrow hidden">
+    <h2>First-time setup</h2>
+    <p class="small">Create the first admin account. You need the setup key, and an authenticator app on your phone.</p>
+    <label>Setup key</label><input id="sKey" autocomplete="off">
+    <label>Username</label><input id="sUser" autocomplete="username">
+    <label>Password (10+ characters)</label><input id="sPass" type="password" autocomplete="new-password">
+    <button id="sNext" class="primary" style="margin-top:14px;width:100%">Next: set up 2FA</button>
+    <div id="sMfa" class="hidden">
+      <p>Add this key to your authenticator app (or <a id="sLink">open it in the app</a>), then type the code it shows.</p>
+      <code id="sSecret" class="secret"></code>
+      <label>6-digit code</label><input id="sCode" inputmode="numeric" autocomplete="one-time-code">
+      <button id="sDone" class="primary" style="margin-top:14px;width:100%">Create admin</button>
+    </div>
+    <div id="sMsg" class="msg"></div>
+  </section>
+
+  <!-- Sign in: password, then authenticator code. -->
+  <section id="login" class="card narrow hidden">
+    <h2>Admin sign-in</h2>
+    <form id="lForm">
+      <label>Username</label><input id="lUser" autocomplete="username" required>
+      <label>Password</label><input id="lPass" type="password" autocomplete="current-password" required>
+      <div id="lMfa" class="hidden"><label>Code from your authenticator app</label><input id="lCode" inputmode="numeric" autocomplete="one-time-code"></div>
+      <button class="primary" style="margin-top:14px;width:100%">Sign in</button>
+    </form>
+    <div id="lMsg" class="msg"></div>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="card">
+      <h2>Release a new version</h2>
+      <div class="row">
+        <div style="flex:1;min-width:140px"><label>Version</label><input id="uVersion" placeholder="0.4"></div>
+        <div style="flex:3;min-width:220px"><label>File (APK)</label><input id="uFile" type="file"></div>
+      </div>
+      <label>What's new (shown on the site)</label><textarea id="uNotes" placeholder="New monsters, rarer ore, ..."></textarea>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="uPublish" type="checkbox" checked style="width:auto"> Make it the download right away</label>
+      <button id="uGo" class="primary" style="margin-top:10px">Upload</button>
+      <div class="bar"><div id="uBar"></div></div>
+      <div id="uMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Versions</h2>
+      <p id="storage" class="small" style="margin-top:0"></p>
+      <div class="scroll"><table><thead><tr><th>Version</th><th>File</th><th>Status</th><th>Downloads</th><th>Uploaded</th><th></th></tr></thead><tbody id="versions"></tbody></table></div>
+      <div id="vMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Beta keys</h2>
+      <div class="row">
+        <div style="flex:3;min-width:200px"><label>Who it's for</label><input id="kLabel" placeholder="e.g. Alex's Quest"></div>
+        <div style="flex:1;min-width:110px"><label>Max downloads (0 = no limit)</label><input id="kUses" type="number" min="0" value="5"></div>
+        <div style="flex:1;min-width:90px"><label>How many</label><input id="kCount" type="number" min="1" max="50" value="1"></div>
+      </div>
+      <button id="kGo" class="primary" style="margin-top:12px">Create keys</button>
+      <div id="kNew" class="msg"></div>
+      <div class="scroll"><table><thead><tr><th>Key</th><th>For</th><th>Used</th><th>Last used</th><th>Status</th><th></th></tr></thead><tbody id="keys"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Admins</h2>
+      <div class="scroll"><table><thead><tr><th>Username</th><th>Added</th></tr></thead><tbody id="admins"></tbody></table></div>
+      <details style="margin-top:12px"><summary>Add an admin</summary>
+        <p class="small">They need to be here with their phone: their authenticator app must show a working code before the account is made.</p>
+        <label>Username</label><input id="aUser">
+        <label>Password (10+ characters; they can't change it yet, so pick it together)</label><input id="aPass" type="password" autocomplete="new-password">
+        <button id="aNext" style="margin-top:12px">Next: their 2FA</button>
+        <div id="aMfa" class="hidden">
+          <p>On their phone, add this key (or <a id="aLink">open it in the app</a>), then type the code it shows.</p>
+          <code id="aSecret" class="secret"></code>
+          <label>6-digit code</label><input id="aCode" inputmode="numeric">
+          <button id="aDone" class="primary" style="margin-top:12px">Add admin</button>
+        </div>
+        <div id="aMsg" class="msg"></div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const show = (id, on = true) => $(id).classList.toggle("hidden", !on);
+const say = (id, text, kind = "") => { $(id).className = "msg " + kind; $(id).textContent = text; };
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const when = (t) => t ? new Date(t * 1000).toLocaleString() : "never";
+const mb = (n) => (n / 1024 / 1024).toFixed(1) + " MB";
+
+async function api(path, opts = {}) {
+  const res = await fetch("/api/admin" + path, {
+    method: opts.method || "GET",
+    headers: opts.raw ? {} : { "Content-Type": "application/json" },
+    body: opts.raw ?? (opts.body ? JSON.stringify(opts.body) : undefined),
+    credentials: "same-origin",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || res.statusText);
+  return data;
+}
+
+// ---------- Setup ----------
+let setupSecret = null;
+$("sNext").onclick = async () => {
+  try {
+    const s = await api("/setup/secret", { method: "POST", body: { setup_key: $("sKey").value, username: $("sUser").value } });
+    setupSecret = s.totp_secret;
+    $("sSecret").textContent = s.totp_secret.replace(/(.{4})/g, "$1 ").trim();
+    $("sLink").href = s.otpauth_url;
+    show("sMfa"); say("sMsg", "");
+  } catch (err) { say("sMsg", err.message, "err"); }
+};
+$("sDone").onclick = async () => {
+  try {
+    await api("/setup", { method: "POST", body: { setup_key: $("sKey").value, username: $("sUser").value, password: $("sPass").value, totp_secret: setupSecret, code: $("sCode").value } });
+    say("sMsg", "Admin created. Sign in below.", "ok");
+    show("setup", false); show("login");
+    $("lUser").value = $("sUser").value;
+  } catch (err) { say("sMsg", err.message, "err"); }
+};
+
+// ---------- Login ----------
+let ticket = null;
+$("lForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    if (!ticket) {
+      ticket = (await api("/login", { method: "POST", body: { username: $("lUser").value, password: $("lPass").value } })).ticket;
+      show("lMfa"); $("lCode").focus(); say("lMsg", "Now the code from your authenticator app.");
+      return;
+    }
+    await api("/login/2fa", { method: "POST", body: { ticket, code: $("lCode").value } });
+    ticket = null; start();
+  } catch (err) {
+    say("lMsg", err.message, "err");
+    if (/took too long|Wrong username/.test(err.message)) { ticket = null; show("lMfa", false); }
+  }
+});
+$("logout").onclick = async (e) => { e.preventDefault(); await api("/logout", { method: "POST" }).catch(() => {}); location.reload(); };
+
+async function start() {
+  const st = await api("/state");
+  if (st.needs_setup) { show("setup"); return; }
+  if (!st.admin) { show("login"); return; }
+  show("login", false); show("setup", false); show("app"); show("logout");
+  $("who").textContent = "Signed in as " + st.admin.username;
+  loadVersions(); loadKeys(); loadAdmins();
+}
+
+// ---------- Upload ----------
+$("uGo").onclick = async () => {
+  const file = $("uFile").files[0];
+  if (!file) return say("uMsg", "Pick the APK first.", "err");
+  $("uGo").disabled = true;
+  try {
+    const start = await api("/versions", { method: "POST", body: { version: $("uVersion").value.trim(), notes: $("uNotes").value, filename: file.name, size: file.size } });
+    for (let i = 0; i < start.chunks; i++) {
+      say("uMsg", `Uploading piece ${i + 1} of ${start.chunks}...`);
+      const piece = file.slice(i * start.chunk_bytes, Math.min(file.size, (i + 1) * start.chunk_bytes));
+      let tries = 0;
+      for (;;) {
+        try { await api(`/versions/${start.id}/chunks/${i}`, { method: "PUT", raw: piece }); break; }
+        catch (err) { if (++tries >= 3) throw err; }
+      }
+      $("uBar").style.width = Math.round(((i + 1) / start.chunks) * 100) + "%";
+    }
+    if ($("uPublish").checked) await api(`/versions/${start.id}/publish`, { method: "POST" });
+    say("uMsg", $("uPublish").checked ? "Uploaded. It's the download now." : "Uploaded. Publish it below when you're ready.", "ok");
+    $("uVersion").value = ""; $("uNotes").value = ""; $("uFile").value = "";
+  } catch (err) { say("uMsg", err.message, "err"); }
+  finally { $("uGo").disabled = false; setTimeout(() => ($("uBar").style.width = "0"), 1500); loadVersions(); }
+};
+
+async function loadVersions() {
+  const d = await api("/versions");
+  $("storage").textContent = `Storage: ${mb(d.storage_used)} of ${mb(d.storage_limit)} used (the free plan holds about 1 GB; delete old versions to make room).`;
+  const latest = d.versions.filter((v) => v.published).sort((a, b) => b.published_at - a.published_at)[0];
+  $("versions").innerHTML = d.versions.map((v) => {
+    const done = v.uploaded >= v.chunks;
+    const status = !done ? `<span class="pill off">upload incomplete</span>` : v.published ? `<span class="pill on">${latest && latest.id === v.id ? "current download" : "released"}</span>` : `<span class="pill">not released</span>`;
+    return `<tr><td>${esc(v.version)}</td><td>${esc(v.filename)}<br><span class="small">${mb(v.size)}</span></td><td>${status}</td><td>${v.downloads}</td><td>${when(v.created_at)}</td>
+      <td class="actions">${done ? (v.published ? `<button data-unpub="${v.id}">Unrelease</button>` : `<button data-pub="${v.id}">Release</button>`) : ""}
+      <button data-del="${v.id}">Delete</button></td></tr>`;
+  }).join("") || `<tr><td colspan="6" class="small">No versions yet.</td></tr>`;
+  const act = async (path, method = "POST") => { try { await api(path, { method }); say("vMsg", ""); } catch (err) { say("vMsg", err.message, "err"); } loadVersions(); };
+  document.querySelectorAll("[data-pub]").forEach((b) => (b.onclick = () => act(`/versions/${b.dataset.pub}/publish`)));
+  document.querySelectorAll("[data-unpub]").forEach((b) => (b.onclick = () => act(`/versions/${b.dataset.unpub}/unpublish`)));
+  document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => confirm("Delete this version for good?") && act(`/versions/${b.dataset.del}`, "DELETE")));
+}
+
+// ---------- Keys ----------
+$("kGo").onclick = async () => {
+  try {
+    const { codes } = await api("/keys", { method: "POST", body: { label: $("kLabel").value, max_uses: Number($("kUses").value), count: Number($("kCount").value) } });
+    say("kNew", "New: " + codes.map(pretty).join("   "), "ok");
+    $("kLabel").value = ""; loadKeys();
+  } catch (err) { say("kNew", err.message, "err"); }
+};
+const pretty = (c) => c.replace(/^(..)(....)(....)$/, "$1-$2-$3");
+
+async function loadKeys() {
+  const { keys } = await api("/keys");
+  $("keys").innerHTML = keys.map((k) => `<tr><td><code>${pretty(k.code)}</code></td><td>${esc(k.label)}</td>
+      <td>${k.uses}${k.max_uses ? " / " + k.max_uses : ""}</td><td>${when(k.last_used_at)}</td>
+      <td>${k.revoked ? '<span class="pill off">revoked</span>' : '<span class="pill on">active</span>'}</td>
+      <td class="actions">${k.revoked ? `<button data-restore="${k.id}">Restore</button>` : `<button data-revoke="${k.id}">Revoke</button>`}</td></tr>`).join("")
+    || `<tr><td colspan="6" class="small">No keys yet.</td></tr>`;
+  document.querySelectorAll("[data-revoke]").forEach((b) => (b.onclick = async () => { await api(`/keys/${b.dataset.revoke}/revoke`, { method: "POST" }); loadKeys(); }));
+  document.querySelectorAll("[data-restore]").forEach((b) => (b.onclick = async () => { await api(`/keys/${b.dataset.restore}/restore`, { method: "POST" }); loadKeys(); }));
+}
+
+// ---------- Admins ----------
+let adminSecret = null;
+async function loadAdmins() {
+  const { admins } = await api("/admins");
+  $("admins").innerHTML = admins.map((a) => `<tr><td>${esc(a.username)}</td><td>${when(a.created_at)}</td></tr>`).join("");
+}
+$("aNext").onclick = async () => {
+  const s = await api("/admins/secret", { method: "POST" });
+  adminSecret = s.totp_secret;
+  $("aSecret").textContent = s.totp_secret.replace(/(.{4})/g, "$1 ").trim();
+  $("aLink").href = s.otpauth_url.replace("new%20admin", encodeURIComponent($("aUser").value || "admin"));
+  show("aMfa");
+};
+$("aDone").onclick = async () => {
+  try {
+    await api("/admins", { method: "POST", body: { username: $("aUser").value, password: $("aPass").value, totp_secret: adminSecret, code: $("aCode").value } });
+    say("aMsg", "Admin added.", "ok"); show("aMfa", false); $("aUser").value = $("aPass").value = $("aCode").value = ""; loadAdmins();
+  } catch (err) { say("aMsg", err.message, "err"); }
+};
+
+start();
+</script>
+</body>
+</html>

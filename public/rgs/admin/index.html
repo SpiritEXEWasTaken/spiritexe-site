@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RGS Admin</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --text:#e6e8ee; --dim:#9aa3b2; --accent:#f0b24a; --bad:#e5634f; --good:#5cc98a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--line); }
+  header b { color:var(--accent); letter-spacing:.04em; }
+  main { max-width:1100px; margin:0 auto; padding:20px 16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  h2 { margin:0 0 12px; font-size:16px; }
+  input, select, button { font:inherit; color:var(--text); background:#0f1218; border:1px solid var(--line); border-radius:6px; padding:7px 10px; }
+  button { cursor:pointer; background:#232836; }
+  button.primary { background:var(--accent); color:#1a1205; border-color:var(--accent); font-weight:600; }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
+  .stat { background:#11141a; border:1px solid var(--line); border-radius:8px; padding:10px; }
+  .stat div:first-child { color:var(--dim); font-size:12px; }
+  .stat div:last-child { font-size:22px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--dim); font-weight:500; font-size:13px; }
+  .tag { font-size:12px; padding:2px 7px; border-radius:20px; border:1px solid var(--line); color:var(--dim); }
+  .tag.banned { color:var(--bad); border-color:var(--bad); }
+  .tag.mfa { color:var(--good); border-color:var(--good); }
+  .msg { min-height:20px; color:var(--dim); margin-top:8px; }
+  .msg.err { color:var(--bad); }
+  .scroll { overflow-x:auto; }
+  #login { max-width:380px; margin:60px auto; }
+  #login input { width:100%; margin-bottom:10px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><b>RGS ADMIN</b><span class="row"><span id="who" class="tag"></span><button id="logout" class="hidden">Sign out</button></span></header>
+<main>
+  <section id="login" class="card">
+    <h2>Staff sign-in</h2>
+    <p style="color:var(--dim);margin-top:0">Staff accounts need 2FA turned on to use this panel.</p>
+    <form id="loginForm">
+      <input id="username" placeholder="Username" autocomplete="username" required>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+      <input id="code" class="hidden" placeholder="6-digit code or recovery code" autocomplete="one-time-code" inputmode="numeric">
+      <button class="primary" style="width:100%">Sign in</button>
+    </form>
+    <button id="firstRun" style="width:100%;margin-top:8px">First run: create the owner account</button>
+    <div id="loginMsg" class="msg"></div>
+    <div id="setup" class="hidden" style="margin-top:14px">
+      <p style="margin:0 0 8px">Add this key to an authenticator app (Google Authenticator, Authy, 1Password...), then type the 6-digit code it shows.</p>
+      <p><code id="secret" style="font-size:16px;letter-spacing:.08em;word-break:break-all"></code><br><a id="otpLink" style="color:var(--accent)">Open in authenticator app</a></p>
+      <input id="setupCode" placeholder="6-digit code" inputmode="numeric" style="width:100%;margin-bottom:10px">
+      <button id="setupBtn" class="primary" style="width:100%">Turn on 2FA</button>
+      <div id="recovery" class="hidden" style="margin-top:12px">
+        <p style="margin:0 0 6px"><b>Save these recovery codes</b> somewhere safe. Each works once if you lose your phone. They won't be shown again.</p>
+        <pre id="codes" style="background:#11141a;padding:10px;border-radius:6px"></pre>
+        <button id="doneSetup" style="width:100%">I saved them, sign in</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="card"><h2>Overview</h2><div id="stats" class="stats"></div></div>
+    <div class="card">
+      <h2>Maintenance and restarts</h2>
+      <p id="mStatus" style="margin:0 0 10px;color:var(--dim)"></p>
+      <div class="row">
+        <select id="mWhen">
+          <option value="60">In 1 hour (full countdown)</option>
+          <option value="30">In 30 minutes</option>
+          <option value="15">In 15 minutes</option>
+          <option value="5">In 5 minutes</option>
+          <option value="0">Right now</option>
+        </select>
+        <select id="mKind"><option value="restart">Restart (update)</option><option value="maint">Maintenance (stays down)</option></select>
+        <input id="mReason" placeholder="Reason players see (optional)" style="flex:1;min-width:200px">
+        <button id="mGo" class="primary">Schedule</button>
+        <button id="mCancel" class="danger">Cancel / end</button>
+      </div>
+      <p style="margin:10px 0 0;color:var(--dim);font-size:13px">Players are warned at 60, 45, 30, 15, 10, 5 and 1 minutes. A restart brings the server back by itself when it runs from scripts/run-server.ps1.</p>
+    </div>
+    <div class="card">
+      <h2>Reports <span id="openCount" class="tag"></span></h2>
+      <div class="scroll"><table><thead><tr><th>When</th><th>Reported</th><th>Reason</th><th>By</th><th>Details</th><th></th></tr></thead><tbody id="reports"></tbody></table></div>
+      <div id="repMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>Accounts</h2>
+      <div class="row"><input id="search" placeholder="Search usernames"><button id="searchBtn">Search</button></div>
+      <div class="scroll"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last seen</th><th></th></tr></thead><tbody id="accounts"></tbody></table></div>
+      <div id="accMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>Audit log</h2>
+      <div class="scroll"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="audit"></tbody></table></div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+// Which RGS server this panel manages: /rgs/admin/?server=<id>. Requests go through the
+// website's relay to that server, so it works from anywhere.
+const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/D/g, "");
+const API = "/rgs/s/" + SERVER + "/api/v1";
+const TOKEN_KEY = "rgsAdmin:" + SERVER;
+if (!SERVER) {
+  document.querySelector("main").innerHTML = `<div style="max-width:460px;margin:60px auto;text-align:center"><h2>Which server?</h2>
+    <p style="color:#9aa3b2">Open this page from the link your game shows, or from <a href="/rgs/servers/" style="color:#f0b24a">your servers</a> if you run one.</p></div>`;
+  throw new Error("no server chosen");
+}
+let token = sessionStorage.getItem(TOKEN_KEY) || "";
+let me = null;
+let ticket = null;
+const ROLES = ["player", "moderator", "admin", "owner"];
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    method: opts.method || "GET",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || res.statusText);
+  return data;
+}
+
+const when = t => t ? new Date(t * 1000).toLocaleString() : "never";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("loginMsg");
+  msg.className = "msg"; msg.textContent = "Signing in...";
+  try {
+    if (!ticket) {
+      const r = await api("/auth/login", { method: "POST", body: { username: $("username").value, password: $("password").value, admin: true } });
+      if (!r.mfa_required) throw new Error("Staff must sign in with 2FA.");
+      ticket = r.ticket;
+      $("code").classList.remove("hidden"); $("code").focus();
+      msg.textContent = "Enter the code from your authenticator app.";
+      return;
+    }
+    const r = await api("/auth/login/2fa", { method: "POST", body: { ticket, code: $("code").value } });
+    token = r.token; sessionStorage.setItem(TOKEN_KEY, token); ticket = null;
+    start();
+  } catch (err) {
+    msg.className = "msg err"; msg.textContent = err.message;
+    // Staff without 2FA: offer to set it up right here.
+    if (/turn on 2FA/i.test(err.message)) beginSetup().catch(e2 => { msg.textContent = e2.message; });
+  }
+});
+
+// The first account on a new server becomes its owner. Later sign-ups are normal players.
+$("firstRun").onclick = async () => {
+  const msg = $("loginMsg");
+  if (!$("username").value || $("password").value.length < 8) {
+    msg.className = "msg err"; msg.textContent = "Type a username and a password (8+ characters) above first.";
+    return;
+  }
+  try {
+    const r = await api("/auth/register", { method: "POST", body: { username: $("username").value, password: $("password").value } });
+    if (r.account.role !== "owner") {
+      msg.className = "msg err"; msg.textContent = "This server already has an owner, so that made a normal player account.";
+      return;
+    }
+    $("firstRun").classList.add("hidden");
+    await beginSetup();
+  } catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
+};
+
+let setupToken = "";
+async function beginSetup() {
+  const r = await api("/auth/login", { method: "POST", body: { username: $("username").value, password: $("password").value } });
+  setupToken = r.token;
+  const saved = token; token = setupToken;
+  try {
+    const s = await api("/auth/2fa/setup", { method: "POST" });
+    $("secret").textContent = s.secret.replace(/(.{4})/g, "$1 ").trim();
+    $("otpLink").href = s.otpauth_url;
+    $("setup").classList.remove("hidden");
+    $("loginMsg").className = "msg"; $("loginMsg").textContent = "Staff need 2FA. Set it up below.";
+  } finally { token = saved; }
+}
+
+$("setupBtn").onclick = async () => {
+  const saved = token; token = setupToken;
+  try {
+    const r = await api("/auth/2fa/confirm", { method: "POST", body: { code: $("setupCode").value } });
+    $("codes").textContent = r.recovery_codes.join("\n");
+    $("recovery").classList.remove("hidden");
+    $("setupBtn").disabled = true;
+    try { await api("/auth/logout", { method: "POST" }); } catch {}
+  } catch (err) { $("loginMsg").className = "msg err"; $("loginMsg").textContent = err.message; }
+  finally { token = saved; }
+};
+
+$("doneSetup").onclick = () => {
+  $("setup").classList.add("hidden");
+  $("loginMsg").className = "msg"; $("loginMsg").textContent = "2FA is on. Sign in again with your code.";
+  ticket = null; $("code").classList.add("hidden");
+};
+
+$("logout").onclick = async () => {
+  try { await api("/auth/logout", { method: "POST" }); } catch {}
+  token = ""; sessionStorage.removeItem(TOKEN_KEY); location.reload();
+};
+$("searchBtn").onclick = loadAccounts;
+$("search").addEventListener("keydown", e => { if (e.key === "Enter") loadAccounts(); });
+
+async function start() {
+  try {
+    me = await api("/auth/me");
+    await api("/admin/stats");
+  } catch (err) {
+    token = ""; sessionStorage.removeItem(TOKEN_KEY);
+    $("login").classList.remove("hidden"); $("app").classList.add("hidden");
+    if (me) { $("loginMsg").className = "msg err"; $("loginMsg").textContent = err.message; }
+    return;
+  }
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logout").classList.remove("hidden");
+  $("who").textContent = me.username + " · " + me.role;
+  loadStats(); loadAccounts(); loadAudit(); loadMaintenance(); loadReports();
+  setInterval(loadMaintenance, 15000);
+  setInterval(loadReports, 30000);
+}
+
+const REASON = { cheating: "Cheating", harassment: "Harassment", inappropriate_name: "Bad name", griefing: "Griefing", other: "Other" };
+
+async function loadReports() {
+  const { reports, open } = await api("/admin/reports");
+  $("openCount").textContent = open + " open";
+  $("reports").innerHTML = reports.map(r => `<tr>
+      <td>${when(r.created_at)}</td>
+      <td>${esc(r.target_name)}${r.target_username && r.target_username !== r.target_name ? ` <span class="tag">${esc(r.target_username)}</span>` : ""}${r.target_id ? "" : ` <span class="tag" title="Not signed in">no account</span>`}</td>
+      <td>${REASON[r.reason] || esc(r.reason)}</td>
+      <td>${esc(r.reporter)}</td>
+      <td>${esc(r.details)}<br><span style="color:var(--dim);font-size:12px">${esc(r.game)} ${esc(r.context)}</span></td>
+      <td class="row">
+        ${r.target_id ? `<button class="danger" data-rban="${r.id}" data-target="${r.target_id}">Ban 24h</button>` : ""}
+        <button data-resolve="${r.id}">Resolved</button>
+        <button data-dismiss="${r.id}">Dismiss</button>
+      </td></tr>`).join("") || `<tr><td colspan="6" style="color:var(--dim)">No open reports.</td></tr>`;
+
+  const handle = async (id, status, note) => {
+    try { await api(`/admin/reports/${id}`, { method: "POST", body: { status, note } }); $("repMsg").className = "msg"; $("repMsg").textContent = "Done."; }
+    catch (err) { $("repMsg").className = "msg err"; $("repMsg").textContent = err.message; }
+    loadReports(); loadAudit();
+  };
+  document.querySelectorAll("[data-resolve]").forEach(b => b.onclick = () => handle(b.dataset.resolve, "resolved", prompt("Note (optional)") || ""));
+  document.querySelectorAll("[data-dismiss]").forEach(b => b.onclick = () => handle(b.dataset.dismiss, "dismissed", ""));
+  document.querySelectorAll("[data-rban]").forEach(b => b.onclick = async () => {
+    const reason = prompt("Ban reason?", "Reported: " + b.closest("tr").children[2].textContent); if (!reason) return;
+    try { await api(`/admin/accounts/${b.dataset.target}/ban`, { method: "POST", body: { reason, hours: 24 } }); }
+    catch (err) { $("repMsg").className = "msg err"; $("repMsg").textContent = err.message; return; }
+    handle(b.dataset.rban, "resolved", "Banned 24h: " + reason); loadAccounts(); loadStats();
+  });
+}
+
+async function loadMaintenance() {
+  const s = await fetch(API + "/status").then(r => r.json());
+  const m = s.maintenance;
+  $("mStatus").textContent = !m ? "Online. Nothing scheduled."
+    : m.seconds_left > 0 ? `Scheduled ${m.restart ? "restart" : "maintenance"}: "${m.announcement.text}"`
+    : m.announcement.text;
+}
+
+$("mGo").onclick = async () => {
+  const restart = $("mKind").value === "restart";
+  const mins = Number($("mWhen").value);
+  if (mins === 0 && !confirm(restart ? "Restart the server right now?" : "Take the server down for maintenance right now?")) return;
+  try {
+    await api("/admin/maintenance", { method: "POST", body: { in_minutes: mins, reason: $("mReason").value, restart } });
+  } catch (err) { alert(err.message); }
+  loadMaintenance(); loadAudit();
+};
+$("mCancel").onclick = async () => {
+  try { await api("/admin/maintenance", { method: "DELETE" }); } catch (err) { alert(err.message); }
+  loadMaintenance(); loadAudit();
+};
+
+async function loadStats() {
+  const s = await api("/admin/stats");
+  const items = [["Accounts", s.accounts], ["Using 2FA", s.with_2fa], ["Staff", s.staff], ["Seen today", s.seen_today], ["Banned", s.banned]];
+  $("stats").innerHTML = items.map(([k, v]) => `<div class="stat"><div>${k}</div><div>${v}</div></div>`).join("");
+}
+
+async function loadAccounts() {
+  const msg = $("accMsg"); msg.textContent = "";
+  const { accounts } = await api("/admin/accounts?q=" + encodeURIComponent($("search").value));
+  const myRank = ROLES.indexOf(me.role);
+  $("accounts").innerHTML = accounts.map(a => {
+    const below = ROLES.indexOf(a.role) < myRank && a.id !== me.id;
+    const banned = a.banned_until && a.banned_until > Date.now() / 1000;
+    const roleOptions = ROLES.filter((r, i) => r !== "owner" && (i < myRank || me.role === "owner"))
+      .map(r => `<option ${r === a.role ? "selected" : ""}>${r}</option>`).join("");
+    const canRole = below && myRank >= ROLES.indexOf("admin");
+    return `<tr>
+      <td>${esc(a.username)}</td>
+      <td>${canRole ? `<select data-role="${a.id}">${roleOptions}</select>` : `<span class="tag">${a.role}</span>`}</td>
+      <td>${banned ? `<span class="tag banned" title="${esc(a.ban_reason)}">banned</span>` : ""} ${a.mfa_enabled ? `<span class="tag mfa">2FA</span>` : ""}</td>
+      <td>${when(a.last_seen_at)}</td>
+      <td class="row">${below ? (banned ? `<button data-unban="${a.id}">Unban</button>` : `<button class="danger" data-ban="${a.id}">Ban</button>`) : ""}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" style="color:var(--dim)">No accounts found.</td></tr>`;
+
+  document.querySelectorAll("[data-role]").forEach(sel => sel.onchange = () => act(`/admin/accounts/${sel.dataset.role}/role`, { role: sel.value }));
+  document.querySelectorAll("[data-unban]").forEach(b => b.onclick = () => act(`/admin/accounts/${b.dataset.unban}/unban`, {}));
+  document.querySelectorAll("[data-ban]").forEach(b => b.onclick = () => {
+    const reason = prompt("Reason for the ban?"); if (!reason) return;
+    const hours = prompt("How many hours? Leave empty for permanent (admins only).");
+    act(`/admin/accounts/${b.dataset.ban}/ban`, { reason, hours: hours ? Number(hours) : null });
+  });
+}
+
+async function act(path, body) {
+  const msg = $("accMsg");
+  try { await api(path, { method: "POST", body }); msg.className = "msg"; msg.textContent = "Done."; }
+  catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
+  loadStats(); loadAccounts(); loadAudit();
+}
+
+async function loadAudit() {
+  const { entries } = await api("/admin/audit");
+  $("audit").innerHTML = entries.map(e => `<tr><td>${when(e.at)}</td><td>${esc(e.actor)}</td><td>${esc(e.action)}</td><td>${esc(e.target)}</td><td>${esc(e.details)}</td></tr>`).join("")
+    || `<tr><td colspan="5" style="color:var(--dim)">Nothing yet.</td></tr>`;
+}
+
+if (token) start();
+</script>
+</body>
+</html>

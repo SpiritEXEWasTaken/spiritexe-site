@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RGS · Rust Game Server</title>
+<meta name="description" content="RGS is a free, open-source game backend you host yourself: accounts, saves, moderation and an admin panel.">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .features .card h3 { margin: 0 0 6px; font-size: 21px; color: var(--glow); }
+  .features .card p { margin: 0; color: var(--dim); }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+  .cta a { text-decoration: none; }
+  ol.steps { color: var(--dim); padding-left: 22px; }
+  ol.steps li { margin-bottom: 8px; }
+  code { background: #0e1118; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--text); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/rgs/">R<span>GS</span></a>
+    <nav><a href="#features">Features</a><a href="#start">Get started</a><a href="/rgs/servers/">Your servers</a><a href="/">SpiritEXE</a></nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <h1>RGS</h1>
+      <p>A free, open-source game backend you run yourself. Accounts, saves, moderation and an admin panel, on your own machine.</p>
+      <div class="cta">
+        <a href="https://github.com/SpiritEXEWasTaken/RGS"><button class="primary">Get it on GitHub</button></a>
+        <a href="/rgs/servers/"><button>Link your server</button></a>
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>What it does</h2>
+      <div class="features">
+        <div class="card"><h3>Accounts</h3><p>Sign-up and login, optional 2FA for players, and 2FA required for staff. Headsets sign in with a short code, so nobody types a password in VR.</p></div>
+        <div class="card"><h3>Private by design</h3><p>Players never see each other's IP addresses. Passwords are hashed, 2FA keys are encrypted, and everything is encrypted in transit.</p></div>
+        <div class="card"><h3>Moderation</h3><p>Roles, bans, an audit log, and player reports from inside your game, with an optional Discord channel feed.</p></div>
+        <div class="card"><h3>Cloud saves</h3><p>Named save slots per game and per player, so progress follows players between devices.</p></div>
+        <div class="card"><h3>Updates without surprises</h3><p>Schedule restarts with in-game countdowns, and turn away old game versions with a clear "please update" message.</p></div>
+        <div class="card"><h3>Runs anywhere</h3><p>One program for Linux, Mac (a Mac mini works great) or Windows. Free, MIT licensed, and $0 to host at home.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>Get started</h2>
+      <div class="card">
+        <ol class="steps">
+          <li>Download RGS for your system from the <a href="https://github.com/SpiritEXEWasTaken/RGS/releases">releases page</a>, or build it with <code>cargo build --release</code>.</li>
+          <li>Follow the <a href="https://github.com/SpiritEXEWasTaken/RGS/blob/main/docs/INSTALL.md">install guide</a> to run it as a service.</li>
+          <li><a href="/rgs/servers/">Make an RGS account here</a> (2FA required) and link your server. Only your account can see the servers you link.</li>
+          <li>Open its <b>Admin panel</b> from there and create the server's owner account. Your server connects out to this website, so the panel, player sign-in and your games reach it from anywhere, with nothing opened on your network.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">RGS is made by <a href="/">SpiritEXE</a> and is open source under the MIT license.</div></footer>
+</body>
+</html>

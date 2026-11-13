@@ -1,0 +1,107 @@
+@font-face {
+  font-family: "Iceberg";
+  src: url("/fonts/Iceberg-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --bg: #0b0d12;
+  --panel: #141821;
+  --panel-2: #1b2030;
+  --line: #262c3b;
+  --text: #e8eaf0;
+  --dim: #9aa3b5;
+  --glow: #f2b24a;
+  --glow-soft: rgba(242, 178, 74, 0.14);
+  --bad: #ef6a57;
+  --good: #5cc98a;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: var(--glow); }
+h1, h2, h3, .brand { font-family: "Iceberg", system-ui, sans-serif; letter-spacing: 0.02em; font-weight: 400; }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+header.top {
+  position: sticky; top: 0; z-index: 5;
+  background: rgba(11, 13, 18, 0.85); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.brand { font-size: 22px; color: var(--text); text-decoration: none; }
+.brand span { color: var(--glow); }
+nav a { color: var(--dim); text-decoration: none; margin-left: 20px; font-size: 15px; }
+nav a:hover { color: var(--text); }
+
+.hero { padding: 96px 0 72px; text-align: center; position: relative; overflow: hidden; }
+.hero::before {
+  content: ""; position: absolute; inset: -40% 20% auto; height: 520px;
+  background: radial-gradient(circle, var(--glow-soft), transparent 65%);
+  pointer-events: none;
+}
+.hero h1 { font-size: clamp(44px, 9vw, 92px); margin: 0; line-height: 1; }
+.hero p { color: var(--dim); font-size: 19px; max-width: 620px; margin: 18px auto 0; }
+
+section { padding: 56px 0; }
+section h2 { font-size: 34px; margin: 0 0 18px; }
+
+.game {
+  display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px;
+}
+.game h3 { font-size: 40px; margin: 0 0 6px; color: var(--glow); }
+.game .tag { display: inline-block; font-size: 13px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; margin: 0 6px 12px 0; }
+.game ul { color: var(--dim); padding-left: 20px; margin: 14px 0 0; }
+.lantern-art {
+  aspect-ratio: 1; border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 214, 140, 0.95) 0 6%, rgba(242, 178, 74, 0.5) 12%, transparent 34%),
+    radial-gradient(circle at 50% 100%, #1b2233, #0d1018 70%);
+  border: 1px solid var(--line);
+  position: relative;
+}
+.lantern-art::after {
+  content: ""; position: absolute; left: 30%; right: 30%; top: 18%; bottom: 30%;
+  border: 3px solid rgba(242, 178, 74, 0.55); border-radius: 6px 6px 10px 10px;
+}
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.download { max-width: 560px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+input, textarea, select, button {
+  font: inherit; color: var(--text); background: #0e1118;
+  border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px;
+}
+input:focus, textarea:focus { outline: 2px solid var(--glow); outline-offset: 1px; }
+input.key { flex: 1; min-width: 200px; letter-spacing: 0.12em; text-transform: uppercase; }
+button { cursor: pointer; background: var(--panel-2); }
+button.primary { background: var(--glow); border-color: var(--glow); color: #1d1405; font-weight: 600; }
+button:disabled { opacity: 0.5; cursor: default; }
+.msg { min-height: 24px; margin-top: 10px; color: var(--dim); }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--good); }
+.small { font-size: 14px; color: var(--dim); }
+
+.versions { display: grid; gap: 12px; }
+.version { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.version h3 { margin: 0; font-size: 22px; }
+.version .when { color: var(--dim); font-size: 14px; }
+.version p { margin: 8px 0 0; white-space: pre-wrap; color: var(--dim); }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--dim); font-size: 14px; }
+
+@media (max-width: 760px) {
+  .game { grid-template-columns: 1fr; padding: 22px; }
+  .lantern-art { max-width: 280px; margin: 0 auto; width: 100%; }
+  nav a { margin-left: 14px; }
+  .hero { padding: 64px 0 48px; }
+}
