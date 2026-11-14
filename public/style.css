@@ -15,6 +15,7 @@
   --glow-soft: rgba(242, 178, 74, 0.14);
   --bad: #ef6a57;
   --good: #5cc98a;
+  --clean: #6fdcc4;
   --radius: 14px;
 }
 
@@ -74,6 +75,30 @@ section h2 { font-size: 34px; margin: 0 0 18px; }
   border: 3px solid rgba(242, 178, 74, 0.55); border-radius: 6px 6px 10px 10px;
 }
 
+.game h3.alt { color: var(--clean); }
+.links { margin-top: 20px; }
+a.button {
+  display: inline-block; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--text); text-decoration: none; font-size: 15px;
+}
+a.button.primary { background: var(--clean); border-color: var(--clean); color: #06201a; font-weight: 600; }
+.clean-art {
+  aspect-ratio: 1; border-radius: var(--radius); border: 1px solid var(--line); position: relative;
+  background:
+    radial-gradient(circle at 72% 30%, rgba(120, 230, 205, 0.9) 0 2%, transparent 7%),
+    radial-gradient(circle at 26% 70%, rgba(120, 230, 205, 0.7) 0 1.5%, transparent 5%),
+    radial-gradient(circle at 50% 100%, #14262a, #0b1215 70%);
+}
+.clean-art::before {
+  content: ""; position: absolute; left: 22%; right: 22%; top: 38%; height: 24%;
+  border: 3px solid rgba(120, 230, 205, 0.6); border-radius: 22px;
+}
+.clean-art::after {
+  content: ""; position: absolute; left: 32%; right: 32%; top: 45%; height: 10%;
+  border-left: 3px solid rgba(120, 230, 205, 0.45); border-right: 3px solid rgba(120, 230, 205, 0.45);
+  border-radius: 8px;
+}
+
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
 .download { max-width: 560px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -101,7 +126,8 @@ footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--d
 
 @media (max-width: 760px) {
   .game { grid-template-columns: 1fr; padding: 22px; }
-  .lantern-art { max-width: 280px; margin: 0 auto; width: 100%; }
-  nav a { margin-left: 14px; }
+  .lantern-art, .clean-art { max-width: 280px; margin: 0 auto; width: 100%; }
+  header.top .wrap { flex-wrap: wrap; height: auto; padding-top: 12px; padding-bottom: 12px; row-gap: 6px; }
+  nav a { margin: 0 16px 0 0; }
   .hero { padding: 64px 0 48px; }
 }
