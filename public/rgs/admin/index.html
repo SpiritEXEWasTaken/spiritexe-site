@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Server admin · RGS</title>
+<title>Server Admin · RGS</title>
 <meta name="theme-color" content="#e9ecf1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -21,38 +21,38 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><span class="brand" translate="no">RGS<span>Server admin</span></span><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign out</a></nav></div></header>
+<header class="top"><div class="wrap"><span class="brand" translate="no">RGS<span>Server Admin</span></span><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign Out</a></nav></div></header>
 <main id="main" class="wrap tool">
   <section id="login" class="card narrow">
-    <h1 class="card-title">Staff sign-in</h1>
+    <h1 class="card-title">Staff Sign-In</h1>
     <p class="dim">Staff accounts need 2FA turned on to use this panel.</p>
     <form id="loginForm">
       <label for="username">Username</label><input id="username" autocomplete="username" required>
       <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
       <input id="code" class="hidden" style="margin-top:12px" aria-label="6-digit code or recovery code" placeholder="6-digit code or recovery code" autocomplete="one-time-code" inputmode="numeric">
-      <button class="primary wide">Sign in</button>
+      <button class="primary wide">Sign In</button>
     </form>
-    <button id="firstRun" class="wide" type="button">First run: create the owner account</button>
+    <button id="firstRun" class="wide" type="button">First Run: Create the Owner Account</button>
     <div id="loginMsg" class="msg" role="status" aria-live="polite"></div>
     <div id="setup" class="hidden" style="margin-top:14px">
       <p>Add this key to an authenticator app (Google Authenticator, Authy, 1Password…), then type the 6-digit code it shows.</p>
       <code id="secret" class="secret"></code>
       <p><a id="otpLink">Open in authenticator app</a></p>
       <label for="setupCode">6-digit code</label><input id="setupCode" inputmode="numeric" autocomplete="one-time-code">
-      <button id="setupBtn" class="primary wide" type="button">Turn on 2FA</button>
+      <button id="setupBtn" class="primary wide" type="button">Turn On 2FA</button>
       <div id="recovery" class="hidden" style="margin-top:12px">
         <p><b>Save these recovery codes</b> somewhere safe. Each works once if you lose your phone. They won’t be shown again.</p>
         <pre id="codes"></pre>
-        <button id="doneSetup" class="wide" type="button">I saved them, sign in</button>
+        <button id="doneSetup" class="wide" type="button">I Saved Them, Sign In</button>
       </div>
     </div>
   </section>
 
   <section id="app" class="hidden">
-    <div class="tool-head"><h1>Server admin</h1><p>Players, reports and restarts for this RGS server.</p></div>
+    <div class="tool-head"><h1>Server Admin</h1><p>Players, reports and restarts for this RGS server.</p></div>
     <div class="card"><h2>Overview</h2><div id="stats" class="stats"></div></div>
     <div class="card">
-      <h2>Maintenance and restarts</h2>
+      <h2>Maintenance and Restarts</h2>
       <p id="mStatus" class="dim"></p>
       <div class="maint">
         <div><label for="mWhen">When</label>
@@ -66,7 +66,7 @@
         <div><label for="mKind">What</label>
           <select id="mKind"><option value="restart">Restart (update)</option><option value="maint">Maintenance (stays down)</option></select></div>
         <div class="grow"><label for="mReason">Reason players see (optional)</label><input id="mReason" name="reason" autocomplete="off"></div>
-        <div class="buttons"><button id="mGo" class="primary" type="button">Schedule</button><button id="mCancel" class="danger" type="button">Cancel or end</button></div>
+        <div class="buttons"><button id="mGo" class="primary" type="button">Schedule</button><button id="mCancel" class="danger" type="button">Cancel or End</button></div>
       </div>
       <p class="dim" style="margin:14px 0 0">Players are warned at 60, 45, 30, 15, 10, 5 and 1 minutes. A restart brings the server back by itself when it runs from scripts/run-server.ps1.</p>
     </div>
@@ -82,7 +82,7 @@
       <div id="accMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
     <div class="card">
-      <h2>Audit log</h2>
+      <h2>Audit Log</h2>
       <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="audit"></tbody></table></div>
     </div>
   </section>
@@ -95,7 +95,7 @@ const SERVER = (new URLSearchParams(location.search).get("server") || "").replac
 const API = "/rgs/s/" + SERVER + "/api/v1";
 const TOKEN_KEY = "rgsAdmin:" + SERVER;
 if (!SERVER) {
-  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which server?</h2>
+  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which Server?</h2>
     <p>Open this page from the link your game shows, or from <a href="/rgs/servers/">your servers</a> if you run one.</p></div>`;
   throw new Error("no server chosen");
 }

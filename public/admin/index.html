@@ -13,43 +13,43 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" translate="no" href="/">SpiritEXE<span>Admin</span></a><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign out</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="brand" translate="no" href="/">SpiritEXE<span>Admin</span></a><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign Out</a></nav></div></header>
 <main id="main" class="wrap tool">
 
   <!-- First run: create the first admin with the setup key. -->
   <section id="setup" class="card narrow hidden">
-    <h1 class="card-title">First-time setup</h1>
+    <h1 class="card-title">First-Time Setup</h1>
     <p class="small">Create the first admin account. You need the setup key, and an authenticator app on your phone.</p>
     <label for="sKey">Setup key</label><input id="sKey" autocomplete="off">
     <label for="sUser">Username</label><input id="sUser" autocomplete="username">
     <label for="sPass">Password (10+ characters)</label><input id="sPass" type="password" autocomplete="new-password">
-    <button id="sNext" class="primary wide">Next: set up 2FA</button>
+    <button id="sNext" class="primary wide">Next: Set Up 2FA</button>
     <div id="sMfa" class="hidden">
       <p>Add this key to your authenticator app (or <a id="sLink">open it in the app</a>), then type the code it shows.</p>
       <code id="sSecret" class="secret"></code>
       <label for="sCode">6-digit code</label><input id="sCode" inputmode="numeric" autocomplete="one-time-code">
-      <button id="sDone" class="primary wide">Create admin</button>
+      <button id="sDone" class="primary wide">Create Admin</button>
     </div>
     <div id="sMsg" class="msg" role="status" aria-live="polite"></div>
   </section>
 
   <!-- Sign in: password, then authenticator code. -->
   <section id="login" class="card narrow hidden">
-    <h1 class="card-title">Admin sign-in</h1>
+    <h1 class="card-title">Admin Sign-In</h1>
     <form id="lForm">
       <label for="lUser">Username</label><input id="lUser" autocomplete="username" required>
       <label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" required>
       <div id="lMfa" class="hidden"><label for="lCode">Code from your authenticator app</label><input id="lCode" inputmode="numeric" autocomplete="one-time-code"></div>
-      <button class="primary wide">Sign in</button>
+      <button class="primary wide">Sign In</button>
     </form>
     <div id="lMsg" class="msg" role="status" aria-live="polite"></div>
   </section>
 
   <section id="app" class="hidden">
-    <div class="tool-head"><h1>Lanternfall admin</h1><p>Release builds and hand out beta keys.</p></div>
+    <div class="tool-head"><h1>Lanternfall Admin</h1><p>Release builds and hand out beta keys.</p></div>
 
     <div class="card">
-      <h2>Release a new version</h2>
+      <h2>Release a New Version</h2>
       <div class="field-row">
         <div style="flex-grow:1"><label for="uVersion">Version</label><input id="uVersion" name="version" placeholder="0.4" autocomplete="off" spellcheck="false"></div>
         <div style="flex-grow:3"><label for="uFile">File (APK)</label><input id="uFile" type="file" accept=".apk"></div>
@@ -69,13 +69,13 @@
     </div>
 
     <div class="card">
-      <h2>Beta keys</h2>
+      <h2>Beta Keys</h2>
       <div class="field-row">
         <div style="flex-grow:3"><label for="kLabel">Who it’s for</label><input id="kLabel" name="label" placeholder="Alex’s Quest…" autocomplete="off"></div>
         <div><label for="kUses">Max downloads (0 = no limit)</label><input id="kUses" name="max_uses" autocomplete="off" type="number" min="0" value="5"></div>
         <div><label for="kCount">How many</label><input id="kCount" name="count" autocomplete="off" type="number" min="1" max="50" value="1"></div>
       </div>
-      <button id="kGo" class="primary" style="margin-top:14px">Create keys</button>
+      <button id="kGo" class="primary" style="margin-top:14px">Create Keys</button>
       <div id="kNew" class="msg" role="status" aria-live="polite"></div>
       <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>Key</th><th>For</th><th>Used</th><th>Last used</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody id="keys"></tbody></table></div>
     </div>
@@ -83,16 +83,16 @@
     <div class="card">
       <h2>Admins</h2>
       <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>Username</th><th>Added</th></tr></thead><tbody id="admins"></tbody></table></div>
-      <details style="margin-top:12px"><summary>Add an admin</summary>
+      <details style="margin-top:12px"><summary>Add an Admin</summary>
         <p class="small">They need to be here with their phone: their authenticator app must show a working code before the account is made.</p>
         <label for="aUser">Username</label><input id="aUser">
         <label for="aPass">Password (10+ characters; they can’t change it yet, so pick it together)</label><input id="aPass" type="password" autocomplete="new-password">
-        <button id="aNext" style="margin-top:14px">Next: their 2FA</button>
+        <button id="aNext" style="margin-top:14px">Next: Their 2FA</button>
         <div id="aMfa" class="hidden">
           <p>On their phone, add this key (or <a id="aLink">open it in the app</a>), then type the code it shows.</p>
           <code id="aSecret" class="secret"></code>
           <label for="aCode">6-digit code</label><input id="aCode" inputmode="numeric">
-          <button id="aDone" class="primary" style="margin-top:14px">Add admin</button>
+          <button id="aDone" class="primary" style="margin-top:14px">Add Admin</button>
         </div>
         <div id="aMsg" class="msg" role="status" aria-live="polite"></div>
       </details>

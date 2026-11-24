@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Your servers · RGS</title>
+<title>Your Servers · RGS</title>
 <meta name="theme-color" content="#e9ecf1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -13,12 +13,12 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" translate="no" href="/rgs/">RGS<span>Your servers</span></a><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign out</a><a href="/rgs/">About RGS</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="brand" translate="no" href="/rgs/">RGS<span>Your Servers</span></a><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign Out</a><a href="/rgs/">About RGS</a></nav></div></header>
 <main id="main" class="wrap tool">
 
   <section id="auth" class="card narrow">
-    <h1 class="card-title">RGS account</h1>
-    <div class="tabs" role="group" aria-label="Sign in or create an account"><button type="button" id="tabIn" class="on">Sign in</button><button type="button" id="tabUp">Create account</button></div>
+    <h1 class="card-title">RGS Account</h1>
+    <div class="tabs" role="group" aria-label="Sign in or create an account"><button type="button" id="tabIn" class="on">Sign In</button><button type="button" id="tabUp">Create Account</button></div>
     <p class="small">RGS accounts are for people who run RGS servers. 2FA is required.</p>
     <form id="form">
       <label for="user">Username</label><input id="user" autocomplete="username" required>
@@ -28,19 +28,19 @@
         <code id="mfaSecret" class="secret"></code>
       </div>
       <div id="mfaBox" class="hidden"><label for="code">6-digit code from your authenticator app</label><input id="code" inputmode="numeric" autocomplete="one-time-code"></div>
-      <button class="primary wide" id="go">Sign in</button>
+      <button class="primary wide" id="go">Sign In</button>
     </form>
     <div id="msg" class="msg" role="status" aria-live="polite"></div>
   </section>
 
   <section id="home" class="hidden">
-    <div class="tool-head"><h1>Your servers</h1><p>Only you can see these. Each server reports in every minute with its own key.</p></div>
+    <div class="tool-head"><h1>Your Servers</h1><p>Only you can see these. Each server reports in every minute with its own key.</p></div>
     <div class="card">
       <div id="servers" class="servers"></div>
     </div>
     <div class="card">
-      <h2>Link a server</h2>
-      <form id="addForm" class="row"><label for="name" class="visually-hidden">Server name</label><input id="name" name="server_name" autocomplete="off" placeholder="Mac mini…" style="flex:1 1 220px;width:auto"><button class="primary" id="add">Link server</button></form>
+      <h2>Link a Server</h2>
+      <form id="addForm" class="row"><label for="name" class="visually-hidden">Server name</label><input id="name" name="server_name" autocomplete="off" placeholder="Mac mini…" style="flex:1 1 220px;width:auto"><button class="primary" id="add">Link Server</button></form>
       <div id="keyBox" class="hidden">
         <p><b>Copy this into your server’s <code>rgs.toml</code>, then restart it.</b> The key is shown only once; if you lose it, make a new one.</p>
         <pre id="keyText"></pre>
@@ -67,7 +67,7 @@ let mode = "in", ticket = null, secret = null;
 function setMode(m) {
   mode = m; ticket = null; secret = null;
   $("tabIn").classList.toggle("on", m === "in"); $("tabUp").classList.toggle("on", m === "up");
-  $("go").textContent = m === "in" ? "Sign in" : "Next: set up 2FA";
+  $("go").textContent = m === "in" ? "Sign In" : "Next: Set Up 2FA";
   show("mfaNew", false); show("mfaBox", false); say("msg", "");
 }
 $("tabIn").onclick = () => setMode("in");
@@ -82,7 +82,7 @@ $("form").addEventListener("submit", async (e) => {
         secret = s.totp_secret;
         $("mfaSecret").textContent = secret.replace(/(.{4})/g, "$1 ").trim();
         $("mfaLink").href = s.otpauth_url;
-        show("mfaNew"); show("mfaBox"); $("go").textContent = "Create account";
+        show("mfaNew"); show("mfaBox"); $("go").textContent = "Create Account";
         return;
       }
       await api("/signup", { method: "POST", body: { username: $("user").value, password: $("pass").value, totp_secret: secret, code: $("code").value } });
@@ -125,7 +125,7 @@ async function loadServers() {
       <div class="facts">Last report: ${ago(s.last_seen)}${r.version ? ` · RGS ${esc(r.version)}` : ""}${s.last_seen ? ` · ${r.accounts} accounts · ${r.active_players} active in the last 10 min · ${r.open_reports} open reports` : ""}${r.games && r.games.length ? ` · Games: ${r.games.map(esc).join(", ")}` : ""}</div>
       ${r.announcement ? `<div class="facts">Announcement: ${esc(r.announcement)}</div>` : ""}
       <div class="facts">Game address: <code>${location.origin}/rgs/s/${s.id}</code></div>
-      <div class="actions"><a class="button primary" href="/rgs/admin/?server=${s.id}">Admin panel</a><a class="button" href="/rgs/account/?server=${s.id}">Player page</a><button data-key="${s.id}">New key</button><button data-del="${s.id}">Unlink</button></div></div>`;
+      <div class="actions"><a class="button primary" href="/rgs/admin/?server=${s.id}">Admin Panel</a><a class="button" href="/rgs/account/?server=${s.id}">Player Page</a><button data-key="${s.id}">New Key</button><button data-del="${s.id}">Unlink</button></div></div>`;
   }).join("") || '<p class="small">No servers linked yet. Link your first one below.</p>';
   document.querySelectorAll("[data-key]").forEach((b) => (b.onclick = async () => {
     if (!confirm("Make a new key? The old one stops working, so update rgs.toml on that server.")) return;

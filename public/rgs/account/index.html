@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Your account · RGS</title>
+<title>Your Account · RGS</title>
 <meta name="theme-color" content="#e9ecf1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -22,17 +22,17 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" translate="no" href="/rgs/">RGS<span>Your account</span></a></div></header>
+<header class="top"><div class="wrap"><a class="brand" translate="no" href="/rgs/">RGS<span>Your Account</span></a></div></header>
 <main id="main" class="wrap tool">
-  <div class="tool-head"><h1>Your account</h1><p>Your account for games on this server.</p></div>
+  <div class="tool-head"><h1>Your Account</h1><p>Your account for games on this server.</p></div>
 
   <section id="auth" class="card">
-    <div class="tabs" role="group" aria-label="Sign in or create an account"><button type="button" id="tabIn" class="on">Sign in</button><button type="button" id="tabUp">Create account</button></div>
+    <div class="tabs" role="group" aria-label="Sign in or create an account"><button type="button" id="tabIn" class="on">Sign In</button><button type="button" id="tabUp">Create Account</button></div>
     <form id="authForm">
       <label for="user">Username</label><input id="user" autocomplete="username" required>
       <label for="pass">Password (8+ characters)</label><input id="pass" type="password" autocomplete="current-password" required>
       <input id="mfa" class="hidden" style="margin-top:12px" aria-label="Code from your authenticator app" placeholder="Code from your authenticator app" inputmode="numeric" autocomplete="one-time-code">
-      <button class="primary" id="authBtn">Sign in</button>
+      <button class="primary" id="authBtn">Sign In</button>
     </form>
     <div id="authMsg" class="msg" role="status" aria-live="polite"></div>
   </section>
@@ -44,7 +44,7 @@
     </div>
 
     <div class="card">
-      <h2>Sign in on a headset</h2>
+      <h2>Sign In on a Headset</h2>
       <p class="dim">Type the code the game shows you.</p>
       <label for="deviceCode" class="visually-hidden">Code from the game</label>
       <input id="deviceCode" class="code" placeholder="ABC-DEF" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -53,10 +53,10 @@
     </div>
 
     <div id="mfaCard" class="card">
-      <h2>Two-factor login (2FA)</h2>
+      <h2>Two-Factor Login (2FA)</h2>
       <div id="mfaOff">
         <p class="dim">Recommended. Protects your account even if someone learns your password.</p>
-        <button id="mfaStart">Turn on 2FA</button>
+        <button id="mfaStart">Turn On 2FA</button>
         <div id="mfaSetup" class="hidden" style="margin-top:12px">
           <p class="dim">Add this key to an authenticator app, then type the code it shows.</p>
           <code id="mfaSecret" class="secret"></code>
@@ -72,23 +72,23 @@
       <div id="mfaOn" class="hidden">
         <p style="color:var(--good);font-weight:600">2FA is on.</p>
         <label for="mfaOffCode">Code (to turn it off)</label><input id="mfaOffCode" inputmode="numeric" autocomplete="one-time-code">
-        <button id="mfaDisable" class="danger">Turn off 2FA</button>
+        <button id="mfaDisable" class="danger">Turn Off 2FA</button>
       </div>
       <div id="mfaMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
 
     <div id="badgeCard" class="card hidden">
-      <h2>Staff badge</h2>
+      <h2>Staff Badge</h2>
       <p class="dim">Shown under your name in games, so players know you’re staff.</p>
       <button id="badgeBtn"></button>
     </div>
 
     <div class="card">
-      <h2>Where you’re signed in</h2>
+      <h2>Where You’re Signed In</h2>
       <div id="sessions"></div>
     </div>
 
-    <button id="signOut">Sign out</button>
+    <button id="signOut">Sign Out</button>
   </section>
 </main>
 <script>
@@ -99,7 +99,7 @@ const SERVER = (new URLSearchParams(location.search).get("server") || "").replac
 const API = "/rgs/s/" + SERVER + "/api/v1";
 const TOKEN_KEY = "rgsToken:" + SERVER;
 if (!SERVER) {
-  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which server?</h2>
+  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which Server?</h2>
     <p>Open this page from the link your game shows, or from <a href="/rgs/servers/">your servers</a> if you run one.</p></div>`;
   throw new Error("no server chosen");
 }
@@ -122,7 +122,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&
 function setMode(m) {
   mode = m; ticket = null; $("mfa").classList.add("hidden");
   $("tabIn").classList.toggle("on", m === "in"); $("tabUp").classList.toggle("on", m === "up");
-  $("authBtn").textContent = m === "in" ? "Sign in" : "Create account";
+  $("authBtn").textContent = m === "in" ? "Sign In" : "Create Account";
   say($("authMsg"), "");
 }
 $("tabIn").onclick = () => setMode("in");
@@ -155,7 +155,7 @@ async function showHome() {
   $("mfaOn").classList.toggle("hidden", !me.mfa_enabled);
   $("mfaCard").classList.toggle("nudge", !me.mfa_enabled);
   $("badgeCard").classList.toggle("hidden", me.role === "player");
-  $("badgeBtn").textContent = me.show_badge ? "Hide my badge" : "Show my badge";
+  $("badgeBtn").textContent = me.show_badge ? "Hide My Badge" : "Show My Badge";
   const code = new URLSearchParams(location.search).get("code");
   if (code && !$("deviceCode").value) $("deviceCode").value = code;
   loadSessions();
@@ -192,12 +192,12 @@ $("mfaDisable").onclick = async () => {
 
 $("badgeBtn").onclick = async () => {
   me = await api("/auth/me/settings", { method: "POST", body: { show_badge: !me.show_badge } });
-  $("badgeBtn").textContent = me.show_badge ? "Hide my badge" : "Show my badge";
+  $("badgeBtn").textContent = me.show_badge ? "Hide My Badge" : "Show My Badge";
 };
 
 async function loadSessions() {
   const { sessions } = await api("/auth/sessions");
-  $("sessions").innerHTML = sessions.map(s => `<div class="session"><div>${esc(s.kind === "web" ? "Website" : s.kind === "admin" ? "Admin panel" : s.kind)}${s.current ? " <span class='dim'>(this one)</span>" : ""}<br><span class="dim">since ${new Date(s.created_at * 1000).toLocaleDateString()}</span></div>${s.current ? "" : `<button class="compact" data-revoke="${s.id}">Sign out</button>`}</div>`).join("");
+  $("sessions").innerHTML = sessions.map(s => `<div class="session"><div>${esc(s.kind === "web" ? "Website" : s.kind === "admin" ? "Admin panel" : s.kind)}${s.current ? " <span class='dim'>(this one)</span>" : ""}<br><span class="dim">since ${new Date(s.created_at * 1000).toLocaleDateString()}</span></div>${s.current ? "" : `<button class="compact" data-revoke="${s.id}">Sign Out</button>`}</div>`).join("");
   document.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { await api("/auth/sessions/" + b.dataset.revoke, { method: "DELETE" }); loadSessions(); });
 }
 
