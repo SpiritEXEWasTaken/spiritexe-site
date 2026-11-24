@@ -100,7 +100,7 @@ check("nothing to download after delete", (await call("GET", "/api/versions")).d
 await call("POST", "/api/admin/logout");
 check("signed out", (await call("GET", "/api/admin/keys")).status === 401);
 
-for (const page of ["/", "/admin/", "/style.css", "/fonts/Iceberg-Regular.ttf"]) check(`page ${page} served`, (await fetch(base + page)).status === 200);
+for (const page of ["/", "/admin/", "/style.css", "/fonts/Geist-Variable-latin.woff2", "/fonts/Unbounded-Variable-latin.woff2", "/favicon.svg", "/icons/pipevr.png"]) check(`page ${page} served`, (await fetch(base + page)).status === 200);
 check("unknown page gets 404", (await fetch(base + "/nope")).status === 404);
 
 console.log(`\n${pass} passed, ${failed} failed`);

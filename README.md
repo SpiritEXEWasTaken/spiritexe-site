@@ -8,6 +8,23 @@ and the RGS pages under `/rgs`.
 - `src/`: the Worker behind `/api/*` (downloads, admin) and `/rgs/api/*` (RGS accounts and servers).
 - Builds are stored in Workers KV in 20 MB pieces; everything else is in D1.
 
+## Look and feel
+
+Everything is styled by `public/style.css`: a light grey page, one colour per project
+(`--lanternfall`, `--pipevr`, `--jellyvr`, `--cleanmyvr`, `--rgs`), Unbounded for headings and
+Geist for text. Both fonts are free (SIL OFL) and served from `public/fonts/`, so the site makes no
+calls to Google.
+
+**Project icons.** A project with its own icon uses an image; the others show a coloured tile with
+their first letter. To add an icon, put a square PNG (at least 128×128) in `public/icons/`, then in
+`public/index.html` replace that project's `<span class="icon ...">X</span>` (in the app library
+at the top, and again in its section further down) with
+`<img class="icon" src="/icons/<name>.png" width="128" height="128" alt="">`, like PipeVR's.
+Icons are drawn with sharp pixels (`image-rendering: pixelated`), which suits pixel art.
+
+**A new project** is one more `<li>` in the app library list and one more `<article class="project p-...">`
+in "Other projects"; give it a colour in `:root` and a `.p-<name>` class in `style.css`.
+
 ## Run it locally
 
 Needs Node.js 22.18+ and Cloudflare's `cf` CLI (`npm install -g cf`).

@@ -3,49 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RGS Account</title>
+<meta name="robots" content="noindex">
+<title>Your account · RGS</title>
+<meta name="theme-color" content="#e9ecf1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Unbounded-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
 <style>
-  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --text:#e6e8ee; --dim:#9aa3b2; --accent:#f0b24a; --bad:#e5634f; --good:#5cc98a; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--text); }
-  main { max-width:460px; margin:0 auto; padding:24px 16px 48px; }
-  h1 { font-size:20px; margin:0 0 4px; color:var(--accent); letter-spacing:.04em; }
-  h2 { font-size:16px; margin:0 0 10px; }
-  .sub { color:var(--dim); margin:0 0 20px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
-  input, button { font:inherit; color:var(--text); background:#0f1218; border:1px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; }
-  input { margin-bottom:10px; }
-  button { cursor:pointer; background:#232836; }
-  button.primary { background:var(--accent); color:#1a1205; border-color:var(--accent); font-weight:600; }
-  button.small { width:auto; padding:6px 10px; font-size:14px; }
-  .code { font-size:28px; text-align:center; letter-spacing:.2em; text-transform:uppercase; }
-  .msg { min-height:22px; color:var(--dim); margin-top:8px; }
-  .msg.err { color:var(--bad); }
-  .msg.ok { color:var(--good); }
-  .tabs { display:flex; gap:8px; margin-bottom:12px; }
-  .tabs button.on { border-color:var(--accent); color:var(--accent); }
-  .nudge { border-color:var(--accent); }
-  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
-  .row:last-child { border-bottom:0; }
-  .dim { color:var(--dim); font-size:14px; }
-  pre { background:#11141a; padding:10px; border-radius:8px; }
-  .hidden { display:none; }
+  main.tool, header.top .wrap { max-width: 520px; }
+  .tool .card button { width: 100%; margin-top: 12px; }
+  .tool .card button.compact { width: auto; margin-top: 0; }
+  .code { font: 700 1.75rem/1 var(--display); text-align: center; letter-spacing: 0.16em; text-transform: uppercase; }
+  .session { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .session:last-child { border-bottom: 0; }
+  #signOut { width: 100%; }
 </style>
 </head>
 <body>
-<main>
-  <h1>RGS ACCOUNT</h1>
-  <p class="sub">Your account for games on this server.</p>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap"><a class="brand" translate="no" href="/rgs/">RGS<span>Your account</span></a></div></header>
+<main id="main" class="wrap tool">
+  <div class="tool-head"><h1>Your account</h1><p>Your account for games on this server.</p></div>
 
   <section id="auth" class="card">
-    <div class="tabs"><button id="tabIn" class="on">Sign in</button><button id="tabUp">Create account</button></div>
+    <div class="tabs" role="group" aria-label="Sign in or create an account"><button type="button" id="tabIn" class="on">Sign in</button><button type="button" id="tabUp">Create account</button></div>
     <form id="authForm">
-      <input id="user" placeholder="Username" autocomplete="username" required>
-      <input id="pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" required>
-      <input id="mfa" class="hidden" placeholder="Code from your authenticator app" inputmode="numeric" autocomplete="one-time-code">
+      <label for="user">Username</label><input id="user" autocomplete="username" required>
+      <label for="pass">Password (8+ characters)</label><input id="pass" type="password" autocomplete="current-password" required>
+      <input id="mfa" class="hidden" style="margin-top:12px" aria-label="Code from your authenticator app" placeholder="Code from your authenticator app" inputmode="numeric" autocomplete="one-time-code">
       <button class="primary" id="authBtn">Sign in</button>
     </form>
-    <div id="authMsg" class="msg"></div>
+    <div id="authMsg" class="msg" role="status" aria-live="polite"></div>
   </section>
 
   <section id="home" class="hidden">
@@ -56,44 +45,46 @@
 
     <div class="card">
       <h2>Sign in on a headset</h2>
-      <p class="dim" style="margin-top:0">Type the code the game shows you.</p>
-      <input id="deviceCode" class="code" placeholder="ABC-DEF" maxlength="7" autocomplete="off">
+      <p class="dim">Type the code the game shows you.</p>
+      <label for="deviceCode" class="visually-hidden">Code from the game</label>
+      <input id="deviceCode" class="code" placeholder="ABC-DEF" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <button class="primary" id="approveBtn">Approve</button>
-      <div id="deviceMsg" class="msg"></div>
+      <div id="deviceMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
 
     <div id="mfaCard" class="card">
       <h2>Two-factor login (2FA)</h2>
       <div id="mfaOff">
-        <p class="dim" style="margin-top:0">Recommended. Protects your account even if someone learns your password.</p>
+        <p class="dim">Recommended. Protects your account even if someone learns your password.</p>
         <button id="mfaStart">Turn on 2FA</button>
         <div id="mfaSetup" class="hidden" style="margin-top:12px">
-          <p class="dim" style="margin:0 0 6px">Add this key to an authenticator app, then type the code it shows.</p>
-          <p><code id="mfaSecret" style="word-break:break-all"></code><br><a id="mfaLink" style="color:var(--accent)">Open in authenticator app</a></p>
-          <input id="mfaCode" placeholder="6-digit code" inputmode="numeric">
+          <p class="dim">Add this key to an authenticator app, then type the code it shows.</p>
+          <code id="mfaSecret" class="secret"></code>
+          <p><a id="mfaLink">Open in authenticator app</a></p>
+          <label for="mfaCode">6-digit code</label><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code">
           <button class="primary" id="mfaConfirm">Confirm</button>
         </div>
         <div id="mfaCodes" class="hidden">
-          <p style="margin:10px 0 6px"><b>Save these recovery codes.</b> Each works once if you lose your phone. They won't be shown again.</p>
+          <p><b>Save these recovery codes.</b> Each works once if you lose your phone. They won’t be shown again.</p>
           <pre id="mfaCodeList"></pre>
         </div>
       </div>
       <div id="mfaOn" class="hidden">
-        <p style="margin-top:0;color:var(--good)">2FA is on.</p>
-        <input id="mfaOffCode" placeholder="Code (to turn it off)" inputmode="numeric">
-        <button id="mfaDisable">Turn off 2FA</button>
+        <p style="color:var(--good);font-weight:600">2FA is on.</p>
+        <label for="mfaOffCode">Code (to turn it off)</label><input id="mfaOffCode" inputmode="numeric" autocomplete="one-time-code">
+        <button id="mfaDisable" class="danger">Turn off 2FA</button>
       </div>
-      <div id="mfaMsg" class="msg"></div>
+      <div id="mfaMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
 
     <div id="badgeCard" class="card hidden">
       <h2>Staff badge</h2>
-      <p class="dim" style="margin-top:0">Shown under your name in games, so players know you're staff.</p>
+      <p class="dim">Shown under your name in games, so players know you’re staff.</p>
       <button id="badgeBtn"></button>
     </div>
 
     <div class="card">
-      <h2>Where you're signed in</h2>
+      <h2>Where you’re signed in</h2>
       <div id="sessions"></div>
     </div>
 
@@ -104,12 +95,12 @@
 const $ = id => document.getElementById(id);
 // Which RGS server this account is on: /rgs/account/?server=<id> (games link here with the
 // right id). Requests go through the website's relay to that server.
-const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/D/g, "");
+const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/[^0-9]/g, "");
 const API = "/rgs/s/" + SERVER + "/api/v1";
 const TOKEN_KEY = "rgsToken:" + SERVER;
 if (!SERVER) {
-  document.querySelector("main").innerHTML = `<div style="max-width:460px;margin:60px auto;text-align:center"><h2>Which server?</h2>
-    <p style="color:#9aa3b2">Open this page from the link your game shows, or from <a href="/rgs/servers/" style="color:#f0b24a">your servers</a> if you run one.</p></div>`;
+  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which server?</h2>
+    <p>Open this page from the link your game shows, or from <a href="/rgs/servers/">your servers</a> if you run one.</p></div>`;
   throw new Error("no server chosen");
 }
 let token = localStorage.getItem(TOKEN_KEY) || "";
@@ -206,7 +197,7 @@ $("badgeBtn").onclick = async () => {
 
 async function loadSessions() {
   const { sessions } = await api("/auth/sessions");
-  $("sessions").innerHTML = sessions.map(s => `<div class="row"><div>${esc(s.kind === "web" ? "Website" : s.kind === "admin" ? "Admin panel" : s.kind)}${s.current ? " <span class='dim'>(this one)</span>" : ""}<br><span class="dim">since ${new Date(s.created_at * 1000).toLocaleDateString()}</span></div>${s.current ? "" : `<button class="small" data-revoke="${s.id}">Sign out</button>`}</div>`).join("");
+  $("sessions").innerHTML = sessions.map(s => `<div class="session"><div>${esc(s.kind === "web" ? "Website" : s.kind === "admin" ? "Admin panel" : s.kind)}${s.current ? " <span class='dim'>(this one)</span>" : ""}<br><span class="dim">since ${new Date(s.created_at * 1000).toLocaleDateString()}</span></div>${s.current ? "" : `<button class="compact" data-revoke="${s.id}">Sign out</button>`}</div>`).join("");
   document.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { await api("/auth/sessions/" + b.dataset.revoke, { method: "DELETE" }); loadSessions(); });
 }
 

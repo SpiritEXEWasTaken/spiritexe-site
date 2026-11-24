@@ -4,114 +4,217 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SpiritEXE</title>
-<meta name="description" content="SpiritEXE: a group of friends making random things, like Lanternfall, a co-op VR game for Meta Quest, and CleanMyVR.">
+<meta name="description" content="SpiritEXE: a group of friends making random things, like Lanternfall, a co-op VR game for Meta Quest, PipeVR and CleanMyVR.">
+<meta name="theme-color" content="#e9ecf1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Unbounded-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="/">Spirit<span>EXE</span></a>
-    <nav><a href="#lanternfall">Lanternfall</a><a href="#download">Download</a><a href="#cleanmyvr">CleanMyVR</a><a href="/rgs/">RGS</a></nav>
+    <a class="brand" translate="no" href="/">SpiritEXE</a>
+    <nav aria-label="Main"><a href="#lanternfall">Lanternfall</a><a href="#projects">Projects</a><a href="/rgs/">RGS</a></nav>
   </div>
 </header>
 
-<main>
-  <div class="hero">
-    <div class="wrap">
-      <h1>SpiritEXE</h1>
-      <p>A group of friends making random things.</p>
-    </div>
-  </div>
-
-  <section id="lanternfall">
-    <div class="wrap">
-      <div class="game">
-        <div>
-          <h3>Lanternfall</h3>
-          <span class="tag">Meta Quest 3</span><span class="tag">Co-op, up to 5</span><span class="tag">Beta</span>
-          <p>Mine an endless cave under a giant glass lantern with your friends. Haul ore back up, upgrade your
-            gear, and keep the Lantern lit when the monsters come out of the trees.</p>
-          <ul>
-            <li>Dig deeper for rarer ore, with pickaxes and drills</li>
-            <li>Fly your backpack thrusters, or walk and teleport</li>
-            <li>Fight off waves of monsters with the Lantern's light beam</li>
-            <li>Public lobbies, or private ones with a code</li>
-          </ul>
-        </div>
-        <div class="lantern-art" role="img" aria-label="A glowing lantern"></div>
-      </div>
-    </div>
+<main id="main">
+  <section class="intro wrap">
+    <h1>A group of friends making random things.</h1>
+    <p>Games, apps and tools, mostly for VR headsets.</p>
   </section>
 
-  <section id="download">
-    <div class="wrap">
-      <h2>Download the beta</h2>
-      <div class="card download">
-        <p style="margin-top:0">Lanternfall is in a closed beta. Enter your beta key to download the newest build.</p>
-        <form id="unlock" class="row">
-          <input id="key" class="key" placeholder="Beta key" autocomplete="off" required>
-          <button class="primary" id="go">Download</button>
+  <nav class="wrap" aria-label="Our projects">
+    <ul class="library">
+      <li><a href="#lanternfall"><span class="icon p-lanternfall" aria-hidden="true">L</span><span class="name" translate="no">Lanternfall</span><span class="what">Co-op VR game, in beta</span></a></li>
+      <li><a href="#pipevr"><img class="icon" src="/icons/pipevr.png" width="128" height="128" alt=""><span class="name" translate="no">PipeVR</span><span class="what">Video app for VR</span></a></li>
+      <li><a href="#cleanmyvr"><span class="icon p-cleanmyvr" aria-hidden="true">C</span><span class="name" translate="no">CleanMyVR</span><span class="what">Quest cleanup tool</span></a></li>
+      <li><a href="#jellyvr"><span class="icon p-jellyvr" aria-hidden="true">J</span><span class="name" translate="no">JellyVR</span><span class="what">Jellyfin for VR, coming soon</span></a></li>
+      <li><a href="#rgs"><span class="icon p-rgs" aria-hidden="true">R</span><span class="name" translate="no">RGS</span><span class="what">Game server you host</span></a></li>
+    </ul>
+  </nav>
+
+  <section id="lanternfall" class="wrap" aria-labelledby="lf-title">
+    <div class="night">
+      <div class="night-copy">
+        <h2 id="lf-title" class="lf-title" translate="no">Lanternfall</h2>
+        <ul class="chips" aria-label="About the game">
+          <li>Meta Quest 3</li><li>Co-op, up to 5 players</li><li>Closed beta</li>
+        </ul>
+        <p class="lf-lead">Mine an endless cave under a giant glass lantern with your friends. Haul ore back up,
+          upgrade your gear, and keep the Lantern lit when the monsters come out of the trees.</p>
+        <ul class="lf-points">
+          <li>Dig deeper for rarer ore, with pickaxes and drills</li>
+          <li>Fly your backpack thrusters, or walk and teleport</li>
+          <li>Fight off waves of monsters with the Lantern’s light beam</li>
+          <li>Public lobbies, or private ones with a code</li>
+        </ul>
+      </div>
+
+      <svg class="lf-art" viewBox="0 0 400 440" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A glowing glass lantern in a dark forest">
+        <defs>
+          <radialGradient id="lfGlow" cx="50%" cy="46%" r="50%">
+            <stop offset="0" stop-color="#ffd98a" stop-opacity=".95"/>
+            <stop offset=".18" stop-color="#f4b23e" stop-opacity=".55"/>
+            <stop offset=".55" stop-color="#f4b23e" stop-opacity=".08"/>
+            <stop offset="1" stop-color="#f4b23e" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect x="-400" width="1200" height="440" fill="#12142c"/>
+        <circle cx="200" cy="200" r="210" fill="url(#lfGlow)"/>
+        <path fill="#0b0c1e" d="M-60 440V360l30-50 30 42V352l18-40 16 30 20-62 22 58 14-26 20 50 18-36 16 32 20-64 24 70 12-22 18 40h4l18-48 22 54 16-30 20 46 18-58 22 60 14-24 18 42 16-34 14 30V440z"/>
+        <g fill="none" stroke="#f4b23e" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M200 72v24"/>
+          <ellipse cx="200" cy="62" rx="14" ry="10"/>
+          <path d="M158 112h84l-14-16h-56z"/>
+          <path d="M150 116h100v8c0 4-3 6-6 6h-88c-3 0-6-2-6-6z"/>
+          <rect x="152" y="130" width="96" height="130" rx="18"/>
+          <path d="M184 130v130M216 130v130" stroke-width="4" stroke-opacity=".6"/>
+          <path d="M158 260l-6 22h96l-6-22"/>
+        </g>
+        <ellipse cx="200" cy="198" rx="22" ry="34" fill="#ffe2a3"/>
+        <ellipse cx="200" cy="204" rx="11" ry="18" fill="#fff6dd"/>
+        <g fill="#f4b23e">
+          <circle cx="72" cy="98" r="2.5" opacity=".7"/><circle cx="322" cy="74" r="2" opacity=".6"/>
+          <circle cx="340" cy="190" r="2.5" opacity=".5"/><circle cx="56" cy="226" r="2" opacity=".5"/>
+          <circle cx="104" cy="160" r="1.6" opacity=".6"/><circle cx="296" cy="132" r="1.6" opacity=".6"/>
+        </g>
+      </svg>
+
+      <div id="download" class="beta">
+        <h3>Download the beta</h3>
+        <p class="night-dim">Lanternfall is in a closed beta. Enter your beta key to download the newest build.</p>
+        <form id="unlock" class="beta-form">
+          <label for="key" class="key-label">Beta key</label>
+          <input id="key" name="key" placeholder="XX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+          <button id="go" class="amber">Download</button>
         </form>
-        <div id="msg" class="msg"></div>
-        <p class="small">The download is an Android APK. Install it using whatever method you use (for example SideQuest).</p>
+        <p id="msg" class="msg" role="status" aria-live="polite"></p>
+        <p class="night-dim small">You’ll get an Android APK. Install it on your Quest with SideQuest, or however you usually sideload.</p>
       </div>
     </div>
+
+    <section id="updates" class="updates" aria-labelledby="updates-title">
+      <h2 id="updates-title">Updates</h2>
+      <ol id="versions" class="versions"><li class="small">Loading updates…</li></ol>
+    </section>
   </section>
 
-  <section id="updates">
-    <div class="wrap">
-      <h2>Updates</h2>
-      <div id="versions" class="versions"><p class="small">Loading...</p></div>
-    </div>
-  </section>
+  <section id="projects" class="wrap projects" aria-labelledby="projects-title">
+    <h2 id="projects-title">Other projects</h2>
 
-  <section id="cleanmyvr">
-    <div class="wrap">
-      <h2>Other projects</h2>
-      <div class="game">
+    <article id="pipevr" class="project p-pipevr" aria-labelledby="pipevr-title">
+      <div class="project-id">
+        <img class="icon" src="/icons/pipevr.png" width="128" height="128" alt="" loading="lazy">
         <div>
-          <h3 class="alt">CleanMyVR</h3>
-          <span class="tag">Meta Quest</span><span class="tag">Windows, macOS, Linux</span><span class="tag">Open source</span>
-          <p>Debloat, clean up, back up and fix a Meta Quest over USB, with a guided app on your computer.
-            No root and nothing to sideload, every change can be undone, and your games keep working.</p>
-          <ul>
-            <li>Remove Meta's extra apps and telemetry, with a preview first</li>
-            <li>Back up photos, videos and game saves, checked file by file</li>
-            <li>Free up storage and fix the "Home is just a white sky" bug</li>
-            <li>Recheck spots what Meta quietly reinstalled and puts it right</li>
-          </ul>
-          <div class="row links">
-            <a class="button primary" href="https://github.com/SpiritEXEWasTaken/CleanMyVR/releases/latest">Download</a>
-            <a class="button" href="https://github.com/SpiritEXEWasTaken/CleanMyVR">Source on GitHub</a>
-          </div>
-          <p class="small">Tested on Meta Quest 3. Turn on Developer Mode, plug the headset in, and start the app.</p>
+          <h3 id="pipevr-title" translate="no">PipeVR</h3>
+          <p class="project-kind">Video app, version 1.0</p>
         </div>
-        <div class="clean-art" role="img" aria-label="A clean VR headset"></div>
       </div>
-    </div>
+      <div class="project-body">
+        <p class="project-lead">One app for YouTube, Twitch and a dozen other video sites, made for VR headsets.
+          No ads, SponsorBlock built in, and a real VR mode.</p>
+        <ul class="project-points">
+          <li>YouTube, Twitch, Kick, Patreon, Floatplane, Rumble, Nebula and more, with one search across all of them</li>
+          <li>Sign in to YouTube with a TV code for your subscriptions, history, playlists and comments</li>
+          <li>360° and 180° video, 3D, and theater screens in eight surroundings, from a movie theater to your own room</li>
+          <li>Live chat as a panel you can move and resize, plus captions</li>
+        </ul>
+        <div class="row project-actions">
+          <a class="button primary" href="https://github.com/SpiritEXEWasTaken/PipeVR/releases/latest/download/PipeVR-arm64.apk">Download APK<span class="visually-hidden"> for PipeVR</span></a>
+          <a class="button" href="https://framedropvr.com/install?manifest=https%3A%2F%2Fraw.githubusercontent.com%2FSpiritEXEWasTaken%2FPipeVR%2Fmain%2Fpipevr.framedrop.json">Install with FrameDrop</a>
+          <a class="button" href="https://github.com/SpiritEXEWasTaken/PipeVR">Source on GitHub<span class="visually-hidden"> for PipeVR</span></a>
+        </div>
+        <p class="small">For Meta Quest, Pico, Steam Frame and other Android headsets. Install the APK with SideQuest or adb. On a Steam Frame, use FrameDrop. Free and open source (GPLv3), built on PipePipe.</p>
+      </div>
+    </article>
+
+    <article id="cleanmyvr" class="project p-cleanmyvr" aria-labelledby="cleanmyvr-title">
+      <div class="project-id">
+        <span class="icon" aria-hidden="true">C</span>
+        <div>
+          <h3 id="cleanmyvr-title" translate="no">CleanMyVR</h3>
+          <p class="project-kind">Quest cleanup tool</p>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-lead">Debloat, clean up, back up and fix a Meta Quest over USB, with a guided app on your computer.
+          No root and nothing to sideload, every change can be undone, and your games keep working.</p>
+        <ul class="project-points">
+          <li>Remove Meta’s extra apps and telemetry, with a preview first</li>
+          <li>Back up photos, videos and game saves, checked file by file</li>
+          <li>Free up storage and fix the “Home is just a white sky” bug</li>
+          <li>Recheck spots what Meta quietly reinstalled and puts it right</li>
+        </ul>
+        <div class="row project-actions">
+          <a class="button primary" href="https://github.com/SpiritEXEWasTaken/CleanMyVR/releases/latest">Download<span class="visually-hidden"> CleanMyVR</span></a>
+          <a class="button" href="https://github.com/SpiritEXEWasTaken/CleanMyVR">Source on GitHub<span class="visually-hidden"> for CleanMyVR</span></a>
+        </div>
+        <p class="small">For Windows, macOS and Linux. Tested on Meta Quest 3: turn on Developer Mode, plug the headset in, and start the app. Free and open source (MIT).</p>
+      </div>
+    </article>
+
+    <article id="jellyvr" class="project p-jellyvr" aria-labelledby="jellyvr-title">
+      <div class="project-id">
+        <span class="icon" aria-hidden="true">J</span>
+        <div>
+          <h3 id="jellyvr-title" translate="no">JellyVR</h3>
+          <p class="project-kind">Jellyfin app, coming soon</p>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-lead">Like PipeVR, but for your own Jellyfin server: your movies and shows, made for Android VR headsets.</p>
+        <p class="small">It isn’t out yet. When it is, the download will be right here.</p>
+      </div>
+    </article>
+
+    <article id="rgs" class="project p-rgs" aria-labelledby="rgs-title">
+      <div class="project-id">
+        <span class="icon" aria-hidden="true">R</span>
+        <div>
+          <h3 id="rgs-title" translate="no">RGS</h3>
+          <p class="project-kind">Game server you host yourself</p>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-lead">A free, open-source game backend you run yourself: accounts, cloud saves, moderation and an admin panel, on your own machine.</p>
+        <div class="row project-actions">
+          <a class="button primary" href="/rgs/">About RGS</a>
+          <a class="button" href="https://github.com/SpiritEXEWasTaken/RGS">Source on GitHub<span class="visually-hidden"> for RGS</span></a>
+        </div>
+      </div>
+    </article>
   </section>
 </main>
 
-<footer><div class="wrap">© SpiritEXE · Lanternfall is in beta and things will change.</div></footer>
+<footer class="foot">
+  <div class="wrap foot-row">
+    <a class="brand" translate="no" href="/">SpiritEXE</a>
+    <p>A group of friends making random things. Lanternfall is in beta, so things will change.</p>
+    <a href="https://github.com/SpiritEXEWasTaken">SpiritEXE on GitHub</a>
+  </div>
+</footer>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const say = (text, kind = "") => { $("msg").className = "msg " + kind; $("msg").textContent = text; };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const mb = (n) => (n / 1024 / 1024).toFixed(0) + " MB";
+const mb = (n) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n / 1024 / 1024) + " MB";
 
 $("unlock").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("go").disabled = true;
-  say("Checking your key...");
+  say("Checking your key…");
   try {
     const res = await fetch("/api/unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: $("key").value }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message);
-    say(`Downloading Lanternfall ${data.version} (${mb(data.size)})...`, "ok");
+    say(`Downloading Lanternfall ${data.version} (${mb(data.size)})…`, "ok");
     location.href = data.url;
   } catch (err) {
-    say(err.message || "Something went wrong.", "err");
+    say(err.message || "Couldn’t check your key. Check your connection and try again.", "err");
   } finally {
     $("go").disabled = false;
   }
@@ -120,13 +223,15 @@ $("unlock").addEventListener("submit", async (e) => {
 (async () => {
   try {
     const { versions } = await fetch("/api/versions").then((r) => r.json());
+    const when = (t) => new Date(t * 1000);
     $("versions").innerHTML = versions.length
-      ? versions.map((v, i) => `<div class="version"><h3>Lanternfall ${esc(v.version)}${i === 0 ? ' <span class="small">· newest</span>' : ""}</h3>
-          <div class="when">${new Date(v.published_at * 1000).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</div>
-          ${v.notes ? `<p>${esc(v.notes)}</p>` : ""}</div>`).join("")
-      : '<p class="small">No builds released yet.</p>';
+      ? versions.map((v, i) => `<li class="version">
+          <div class="v-head"><h3>${esc(v.version)}</h3>${i === 0 ? '<span class="newest">Newest</span>' : ""}
+            <time datetime="${when(v.published_at).toISOString().slice(0, 10)}">${when(v.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</time></div>
+          ${v.notes ? `<p>${esc(v.notes)}</p>` : '<p class="small">No notes for this build.</p>'}</li>`).join("")
+      : '<li class="small">No builds yet. The first one will show up here.</li>';
   } catch {
-    $("versions").innerHTML = '<p class="small">Couldn\'t load updates.</p>';
+    $("versions").innerHTML = '<li class="msg err">Couldn\'t load updates. Refresh the page to try again.</li>';
   }
 })();
 </script>

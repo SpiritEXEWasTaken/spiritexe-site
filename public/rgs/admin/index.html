@@ -3,100 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RGS Admin</title>
+<meta name="robots" content="noindex">
+<title>Server admin · RGS</title>
+<meta name="theme-color" content="#e9ecf1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/Geist-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Unbounded-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
 <style>
-  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --text:#e6e8ee; --dim:#9aa3b2; --accent:#f0b24a; --bad:#e5634f; --good:#5cc98a; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--text); }
-  header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--line); }
-  header b { color:var(--accent); letter-spacing:.04em; }
-  main { max-width:1100px; margin:0 auto; padding:20px 16px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
-  h2 { margin:0 0 12px; font-size:16px; }
-  input, select, button { font:inherit; color:var(--text); background:#0f1218; border:1px solid var(--line); border-radius:6px; padding:7px 10px; }
-  button { cursor:pointer; background:#232836; }
-  button.primary { background:var(--accent); color:#1a1205; border-color:var(--accent); font-weight:600; }
-  button.danger { border-color:var(--bad); color:var(--bad); }
-  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
-  .stat { background:#11141a; border:1px solid var(--line); border-radius:8px; padding:10px; }
-  .stat div:first-child { color:var(--dim); font-size:12px; }
-  .stat div:last-child { font-size:22px; font-weight:600; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
-  th { color:var(--dim); font-weight:500; font-size:13px; }
-  .tag { font-size:12px; padding:2px 7px; border-radius:20px; border:1px solid var(--line); color:var(--dim); }
-  .tag.banned { color:var(--bad); border-color:var(--bad); }
-  .tag.mfa { color:var(--good); border-color:var(--good); }
-  .msg { min-height:20px; color:var(--dim); margin-top:8px; }
-  .msg.err { color:var(--bad); }
-  .scroll { overflow-x:auto; }
-  #login { max-width:380px; margin:60px auto; }
-  #login input { width:100%; margin-bottom:10px; }
-  .hidden { display:none; }
+  #login { max-width: 440px; margin-left: auto; margin-right: auto; }
+  #login .wide + .wide { margin-top: 8px; }
+  .maint { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 2fr); gap: 0 12px; align-items: end; }
+  .maint select, .maint input { width: 100%; }
+  .maint .buttons { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  @media (max-width: 760px) { .maint { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
-<header><b>RGS ADMIN</b><span class="row"><span id="who" class="tag"></span><button id="logout" class="hidden">Sign out</button></span></header>
-<main>
-  <section id="login" class="card">
-    <h2>Staff sign-in</h2>
-    <p style="color:var(--dim);margin-top:0">Staff accounts need 2FA turned on to use this panel.</p>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap"><span class="brand" translate="no">RGS<span>Server admin</span></span><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign out</a></nav></div></header>
+<main id="main" class="wrap tool">
+  <section id="login" class="card narrow">
+    <h1 class="card-title">Staff sign-in</h1>
+    <p class="dim">Staff accounts need 2FA turned on to use this panel.</p>
     <form id="loginForm">
-      <input id="username" placeholder="Username" autocomplete="username" required>
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
-      <input id="code" class="hidden" placeholder="6-digit code or recovery code" autocomplete="one-time-code" inputmode="numeric">
-      <button class="primary" style="width:100%">Sign in</button>
+      <label for="username">Username</label><input id="username" autocomplete="username" required>
+      <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+      <input id="code" class="hidden" style="margin-top:12px" aria-label="6-digit code or recovery code" placeholder="6-digit code or recovery code" autocomplete="one-time-code" inputmode="numeric">
+      <button class="primary wide">Sign in</button>
     </form>
-    <button id="firstRun" style="width:100%;margin-top:8px">First run: create the owner account</button>
-    <div id="loginMsg" class="msg"></div>
+    <button id="firstRun" class="wide" type="button">First run: create the owner account</button>
+    <div id="loginMsg" class="msg" role="status" aria-live="polite"></div>
     <div id="setup" class="hidden" style="margin-top:14px">
-      <p style="margin:0 0 8px">Add this key to an authenticator app (Google Authenticator, Authy, 1Password...), then type the 6-digit code it shows.</p>
-      <p><code id="secret" style="font-size:16px;letter-spacing:.08em;word-break:break-all"></code><br><a id="otpLink" style="color:var(--accent)">Open in authenticator app</a></p>
-      <input id="setupCode" placeholder="6-digit code" inputmode="numeric" style="width:100%;margin-bottom:10px">
-      <button id="setupBtn" class="primary" style="width:100%">Turn on 2FA</button>
+      <p>Add this key to an authenticator app (Google Authenticator, Authy, 1Password…), then type the 6-digit code it shows.</p>
+      <code id="secret" class="secret"></code>
+      <p><a id="otpLink">Open in authenticator app</a></p>
+      <label for="setupCode">6-digit code</label><input id="setupCode" inputmode="numeric" autocomplete="one-time-code">
+      <button id="setupBtn" class="primary wide" type="button">Turn on 2FA</button>
       <div id="recovery" class="hidden" style="margin-top:12px">
-        <p style="margin:0 0 6px"><b>Save these recovery codes</b> somewhere safe. Each works once if you lose your phone. They won't be shown again.</p>
-        <pre id="codes" style="background:#11141a;padding:10px;border-radius:6px"></pre>
-        <button id="doneSetup" style="width:100%">I saved them, sign in</button>
+        <p><b>Save these recovery codes</b> somewhere safe. Each works once if you lose your phone. They won’t be shown again.</p>
+        <pre id="codes"></pre>
+        <button id="doneSetup" class="wide" type="button">I saved them, sign in</button>
       </div>
     </div>
   </section>
 
   <section id="app" class="hidden">
+    <div class="tool-head"><h1>Server admin</h1><p>Players, reports and restarts for this RGS server.</p></div>
     <div class="card"><h2>Overview</h2><div id="stats" class="stats"></div></div>
     <div class="card">
       <h2>Maintenance and restarts</h2>
-      <p id="mStatus" style="margin:0 0 10px;color:var(--dim)"></p>
-      <div class="row">
-        <select id="mWhen">
-          <option value="60">In 1 hour (full countdown)</option>
-          <option value="30">In 30 minutes</option>
-          <option value="15">In 15 minutes</option>
-          <option value="5">In 5 minutes</option>
-          <option value="0">Right now</option>
-        </select>
-        <select id="mKind"><option value="restart">Restart (update)</option><option value="maint">Maintenance (stays down)</option></select>
-        <input id="mReason" placeholder="Reason players see (optional)" style="flex:1;min-width:200px">
-        <button id="mGo" class="primary">Schedule</button>
-        <button id="mCancel" class="danger">Cancel / end</button>
+      <p id="mStatus" class="dim"></p>
+      <div class="maint">
+        <div><label for="mWhen">When</label>
+          <select id="mWhen">
+            <option value="60">In 1 hour (full countdown)</option>
+            <option value="30">In 30 minutes</option>
+            <option value="15">In 15 minutes</option>
+            <option value="5">In 5 minutes</option>
+            <option value="0">Right now</option>
+          </select></div>
+        <div><label for="mKind">What</label>
+          <select id="mKind"><option value="restart">Restart (update)</option><option value="maint">Maintenance (stays down)</option></select></div>
+        <div class="grow"><label for="mReason">Reason players see (optional)</label><input id="mReason" name="reason" autocomplete="off"></div>
+        <div class="buttons"><button id="mGo" class="primary" type="button">Schedule</button><button id="mCancel" class="danger" type="button">Cancel or end</button></div>
       </div>
-      <p style="margin:10px 0 0;color:var(--dim);font-size:13px">Players are warned at 60, 45, 30, 15, 10, 5 and 1 minutes. A restart brings the server back by itself when it runs from scripts/run-server.ps1.</p>
+      <p class="dim" style="margin:14px 0 0">Players are warned at 60, 45, 30, 15, 10, 5 and 1 minutes. A restart brings the server back by itself when it runs from scripts/run-server.ps1.</p>
     </div>
     <div class="card">
       <h2>Reports <span id="openCount" class="tag"></span></h2>
-      <div class="scroll"><table><thead><tr><th>When</th><th>Reported</th><th>Reason</th><th>By</th><th>Details</th><th></th></tr></thead><tbody id="reports"></tbody></table></div>
-      <div id="repMsg" class="msg"></div>
+      <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>When</th><th>Reported</th><th>Reason</th><th>By</th><th>Details</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody id="reports"></tbody></table></div>
+      <div id="repMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
     <div class="card">
       <h2>Accounts</h2>
-      <div class="row"><input id="search" placeholder="Search usernames"><button id="searchBtn">Search</button></div>
-      <div class="scroll"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last seen</th><th></th></tr></thead><tbody id="accounts"></tbody></table></div>
-      <div id="accMsg" class="msg"></div>
+      <div class="row"><label for="search" class="visually-hidden">Search usernames</label><input id="search" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search usernames…" style="flex:1 1 220px;width:auto"><button id="searchBtn" type="button">Search</button></div>
+      <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last seen</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody id="accounts"></tbody></table></div>
+      <div id="accMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
     <div class="card">
       <h2>Audit log</h2>
-      <div class="scroll"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="audit"></tbody></table></div>
+      <div class="scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="audit"></tbody></table></div>
     </div>
   </section>
 </main>
@@ -104,12 +91,12 @@
 const $ = id => document.getElementById(id);
 // Which RGS server this panel manages: /rgs/admin/?server=<id>. Requests go through the
 // website's relay to that server, so it works from anywhere.
-const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/D/g, "");
+const SERVER = (new URLSearchParams(location.search).get("server") || "").replace(/[^0-9]/g, "");
 const API = "/rgs/s/" + SERVER + "/api/v1";
 const TOKEN_KEY = "rgsAdmin:" + SERVER;
 if (!SERVER) {
-  document.querySelector("main").innerHTML = `<div style="max-width:460px;margin:60px auto;text-align:center"><h2>Which server?</h2>
-    <p style="color:#9aa3b2">Open this page from the link your game shows, or from <a href="/rgs/servers/" style="color:#f0b24a">your servers</a> if you run one.</p></div>`;
+  document.querySelector("main").innerHTML = `<div class="card narrow"><h2>Which server?</h2>
+    <p>Open this page from the link your game shows, or from <a href="/rgs/servers/">your servers</a> if you run one.</p></div>`;
   throw new Error("no server chosen");
 }
 let token = sessionStorage.getItem(TOKEN_KEY) || "";
@@ -134,7 +121,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
   const msg = $("loginMsg");
-  msg.className = "msg"; msg.textContent = "Signing in...";
+  msg.className = "msg"; msg.textContent = "Signing in…";
   try {
     if (!ticket) {
       const r = await api("/auth/login", { method: "POST", body: { username: $("username").value, password: $("password").value, admin: true } });
@@ -204,7 +191,8 @@ $("doneSetup").onclick = () => {
   ticket = null; $("code").classList.add("hidden");
 };
 
-$("logout").onclick = async () => {
+$("logout").onclick = async (e) => {
+  e.preventDefault();
   try { await api("/auth/logout", { method: "POST" }); } catch {}
   token = ""; sessionStorage.removeItem(TOKEN_KEY); location.reload();
 };
