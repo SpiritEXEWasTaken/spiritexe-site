@@ -5,6 +5,8 @@ import { rgsRoutes, serverForKey } from "./rgs";
 import { ensureSchema } from "./db";
 import { fail, json } from "./http";
 
+import { LINKED_BY, serverLink } from "./link";
+
 export { ServerLink } from "./link";
 
 // Everything under /api/, /rgs/api/ and /rgs/s/ comes here; the rest of the site is static
@@ -27,9 +29,7 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-function linkFor(serverId: number) {
-	return env.LINKS.get(env.LINKS.idFromName(String(serverId)));
-}
+const linkFor = (serverId: number) => serverLink(env, serverId);
 
 /** An RGS server opening its relay connection, proving who it is with its server key. */
 async function link(request: Request): Promise<Response> {
@@ -46,5 +46,7 @@ async function relay(request: Request, url: URL, serverId: number, apiPath: stri
 	if (!exists) return fail(404, "not_found", "No such RGS server.");
 	const forward = new Request(new URL(apiPath + url.search, url.origin), request);
 	forward.headers.set("x-rgs-client-ip", request.headers.get("CF-Connecting-IP") ?? "");
+	// Visitors can never vouch for themselves as the server's owner.
+	forward.headers.delete(LINKED_BY);
 	return linkFor(serverId).fetch(forward);
 }

@@ -24,15 +24,29 @@
 <header class="top"><div class="wrap"><span class="brand" translate="no">RGS<span>Server Admin</span></span><nav aria-label="Account"><span id="who" class="small"></span><a href="#" id="logout" class="hidden">Sign Out</a></nav></div></header>
 <main id="main" class="wrap tool">
   <section id="login" class="card narrow">
-    <h1 class="card-title">Staff Sign-In</h1>
-    <p class="dim">Staff accounts need 2FA turned on to use this panel.</p>
+    <h1 class="card-title">Admin Panel</h1>
+    <div id="hubBox">
+      <p id="hubMsg" class="dim" role="status" aria-live="polite">Opening with your RGS account…</p>
+      <a id="hubSignIn" class="button primary wide hidden" href="/rgs/servers/">Sign In With Your RGS Account</a>
+    </div>
+    <div id="ownerBox" class="hidden" style="margin-top:14px">
+      <p>This server is new, so it has no owner yet. Pick the username and password you’ll <b>play</b> with on this server; that account becomes its owner. The admin panel keeps opening with your RGS account.</p>
+      <form id="ownerForm">
+        <label for="ownerUser">Username</label><input id="ownerUser" autocomplete="username" required>
+        <label for="ownerPass">Password (8+ characters)</label><input id="ownerPass" type="password" autocomplete="new-password" minlength="8" required>
+        <button class="primary wide">Create Owner Account</button>
+      </form>
+      <div id="ownerMsg" class="msg" role="status" aria-live="polite"></div>
+    </div>
+    <details id="staffBox" style="margin-top:14px">
+    <summary>Other Staff: Sign In With a Server Account</summary>
+    <p class="dim">For moderators and admins of this server. Staff accounts need 2FA turned on.</p>
     <form id="loginForm">
       <label for="username">Username</label><input id="username" autocomplete="username" required>
       <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
       <input id="code" class="hidden" style="margin-top:12px" aria-label="6-digit code or recovery code" placeholder="6-digit code or recovery code" autocomplete="one-time-code" inputmode="numeric">
       <button class="primary wide">Sign In</button>
     </form>
-    <button id="firstRun" class="wide" type="button">First Run: Create the Owner Account</button>
     <div id="loginMsg" class="msg" role="status" aria-live="polite"></div>
     <div id="setup" class="hidden" style="margin-top:14px">
       <p>Add this key to an authenticator app (Google Authenticator, Authy, 1Password…), then type the 6-digit code it shows.</p>
@@ -46,6 +60,7 @@
         <button id="doneSetup" class="wide" type="button">I Saved Them, Sign In</button>
       </div>
     </div>
+    </details>
   </section>
 
   <section id="app" class="hidden">
@@ -99,7 +114,11 @@ if (!SERVER) {
     <p>Open this page from the link your game shows, or from <a href="/rgs/servers/">your servers</a> if you run one.</p></div>`;
   throw new Error("no server chosen");
 }
+const VIA_KEY = "rgsAdminVia:" + SERVER;
 let token = sessionStorage.getItem(TOKEN_KEY) || "";
+// "hub": opened with the RGS website account that linked this server (one account, no second
+// sign-in). "staff": signed in with a server account (other moderators and admins).
+let via = sessionStorage.getItem(VIA_KEY) || "";
 let me = null;
 let ticket = null;
 const ROLES = ["player", "moderator", "admin", "owner"];
@@ -132,7 +151,7 @@ $("loginForm").addEventListener("submit", async e => {
       return;
     }
     const r = await api("/auth/login/2fa", { method: "POST", body: { ticket, code: $("code").value } });
-    token = r.token; sessionStorage.setItem(TOKEN_KEY, token); ticket = null;
+    keep(r.token, "staff"); ticket = null;
     start();
   } catch (err) {
     msg.className = "msg err"; msg.textContent = err.message;
@@ -141,23 +160,52 @@ $("loginForm").addEventListener("submit", async e => {
   }
 });
 
-// The first account on a new server becomes its owner. Later sign-ups are normal players.
-$("firstRun").onclick = async () => {
-  const msg = $("loginMsg");
-  if (!$("username").value || $("password").value.length < 8) {
-    msg.className = "msg err"; msg.textContent = "Type a username and a password (8+ characters) above first.";
-    return;
+function keep(t, how) {
+  token = t; via = how;
+  sessionStorage.setItem(TOKEN_KEY, t); sessionStorage.setItem(VIA_KEY, how);
+}
+function forget() {
+  token = ""; via = "";
+  sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(VIA_KEY);
+}
+
+// One account: the RGS website account this server is linked to opens the panel as the
+// server's owner. The website already signed it in with 2FA and vouches for it to the server.
+async function openWithWebsite() {
+  const hubMsg = $("hubMsg");
+  hubMsg.className = "dim"; hubMsg.textContent = "Opening with your RGS account…";
+  const res = await fetch(`/rgs/api/servers/${SERVER}/admin`, { method: "POST", credentials: "same-origin" }).catch(() => null);
+  const data = res ? await res.json().catch(() => ({})) : {};
+  if (res && res.ok && data.token) { keep(data.token, "hub"); return true; }
+  if (res && res.status === 401) {
+    hubMsg.textContent = "Sign in with the RGS account this server is linked to.";
+    $("hubSignIn").href = "/rgs/servers/?next=" + encodeURIComponent(location.pathname + location.search);
+    $("hubSignIn").classList.remove("hidden");
+  } else if (data.error === "no_owner") {
+    hubMsg.textContent = "";
+    $("ownerBox").classList.remove("hidden");
+  } else if (res && res.status === 404) {
+    hubMsg.textContent = "This server isn’t linked to your RGS account. If you’re staff on it, sign in with your server account below.";
+    $("staffBox").open = true;
+  } else {
+    hubMsg.className = "msg err"; hubMsg.textContent = data.message || "Couldn’t reach the RGS website. Try again in a minute.";
   }
+  return false;
+}
+
+// A brand-new server: its first account becomes the owner (the account they play with).
+$("ownerForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("ownerMsg");
+  msg.className = "msg"; msg.textContent = "Creating…";
   try {
-    const r = await api("/auth/register", { method: "POST", body: { username: $("username").value, password: $("password").value } });
-    if (r.account.role !== "owner") {
-      msg.className = "msg err"; msg.textContent = "This server already has an owner, so that made a normal player account.";
-      return;
-    }
-    $("firstRun").classList.add("hidden");
-    await beginSetup();
+    const r = await api("/auth/register", { method: "POST", body: { username: $("ownerUser").value, password: $("ownerPass").value } });
+    try { token = r.token; await api("/auth/logout", { method: "POST" }); } catch {} finally { token = ""; }
+    if (r.account.role !== "owner") throw new Error("This server already has an owner, so that made a normal player account.");
+    $("ownerBox").classList.add("hidden");
+    if (await openWithWebsite()) start();
   } catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
-};
+});
 
 let setupToken = "";
 async function beginSetup() {
@@ -194,23 +242,29 @@ $("doneSetup").onclick = () => {
 $("logout").onclick = async (e) => {
   e.preventDefault();
   try { await api("/auth/logout", { method: "POST" }); } catch {}
-  token = ""; sessionStorage.removeItem(TOKEN_KEY); location.reload();
+  // One account: signing out of the panel also signs out of the RGS website.
+  if (via === "hub") await fetch("/rgs/api/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
+  forget(); location.reload();
 };
 $("searchBtn").onclick = loadAccounts;
 $("search").addEventListener("keydown", e => { if (e.key === "Enter") loadAccounts(); });
 
+let retried = false;
 async function start() {
   try {
     me = await api("/auth/me");
     await api("/admin/stats");
   } catch (err) {
-    token = ""; sessionStorage.removeItem(TOKEN_KEY);
+    const wasStaff = via === "staff";
+    forget(); me = null;
     $("login").classList.remove("hidden"); $("app").classList.add("hidden");
-    if (me) { $("loginMsg").className = "msg err"; $("loginMsg").textContent = err.message; }
+    if (wasStaff) { $("staffBox").open = true; $("loginMsg").className = "msg err"; $("loginMsg").textContent = err.message; }
+    // The panel session ran out: get a fresh one from the RGS website (still one account).
+    if (!retried) { retried = true; if (await openWithWebsite()) return start(); }
     return;
   }
   $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logout").classList.remove("hidden");
-  $("who").textContent = me.username + " · " + me.role;
+  $("who").textContent = me.username + " · " + me.role + (via === "hub" ? " · via your RGS account" : "");
   loadStats(); loadAccounts(); loadAudit(); loadMaintenance(); loadReports();
   setInterval(loadMaintenance, 15000);
   setInterval(loadReports, 30000);
@@ -318,6 +372,7 @@ async function loadAudit() {
 }
 
 if (token) start();
+else openWithWebsite().then(ok => { if (ok) start(); });
 </script>
 </body>
 </html>

@@ -8,6 +8,15 @@ import { DurableObject } from "cloudflare:workers";
 const TIMEOUT_MS = 25_000;
 const MAX_BODY = 900 * 1024;
 
+/** Internal header: the website account that linked the server, vouched for by this Worker.
+ * The server turns it into an owner admin panel session, so it must never come from a visitor. */
+export const LINKED_BY = "x-rgs-linked-by";
+
+/** The relay for one linked server. */
+export function serverLink(env: Env, serverId: number) {
+	return env.LINKS.get(env.LINKS.idFromName(String(serverId)));
+}
+
 type Pending = { resolve: (r: Response) => void; timer: ReturnType<typeof setTimeout> };
 
 function offline(): Response {
@@ -64,6 +73,8 @@ export class ServerLink extends DurableObject<Env> {
 			headers,
 			client_ip: request.headers.get("x-rgs-client-ip") ?? "",
 			body: body ? b64(body) : null,
+			// Only set by the Worker itself (openAdmin in rgs.ts); stripped from visitors' requests.
+			linked_by: request.headers.get(LINKED_BY) || undefined,
 		};
 
 		return new Promise<Response>((resolve) => {

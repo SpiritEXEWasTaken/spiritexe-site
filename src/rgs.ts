@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { checkTotp, hashPassword, newTotpSecret, verifyPassword } from "./auth";
 import { allow } from "./db";
 import { body, fail, hmacHex, ipHash, json, now, randomToken } from "./http";
+import { LINKED_BY, serverLink } from "./link";
 
 // RGS hub, under /rgs: accounts for people who run RGS servers, and their servers.
 // Each server is linked to one account by a secret server key that only that account sees
@@ -56,6 +57,8 @@ export async function rgsRoutes(request: Request, url: URL): Promise<Response> {
 	if (path === "/servers" && m === "POST") return addServer(request, me.id);
 	let match = path.match(/^\/servers\/(\d+)\/key$/);
 	if (match && m === "POST") return newKey(me.id, Number(match[1]));
+	match = path.match(/^\/servers\/(\d+)\/admin$/);
+	if (match && m === "POST") return openAdmin(me, Number(match[1]));
 	match = path.match(/^\/servers\/(\d+)$/);
 	if (match && m === "DELETE") return removeServer(me.id, Number(match[1]));
 	return fail(404, "not_found", "Not found.");
@@ -192,6 +195,19 @@ async function newKey(ownerId: number, id: number): Promise<Response> {
 	const done = await env.DB.prepare("UPDATE rgs_servers SET key_hash = ? WHERE id = ? AND owner_id = ?").bind(hash, id, ownerId).run();
 	if (!done.meta.changes) return fail(404, "not_found", "No such server.");
 	return json({ id, key });
+}
+
+/** One account: the account that linked a server opens its admin panel with no second sign-in.
+ * This account signed in here with 2FA, so the Worker vouches for it over the relay and the
+ * server answers with an admin panel session as its owner. */
+async function openAdmin(me: { id: number; username: string }, id: number): Promise<Response> {
+	const own = await env.DB.prepare("SELECT 1 FROM rgs_servers WHERE id = ? AND owner_id = ?").bind(id, me.id).first();
+	if (!own) return fail(404, "not_found", "That server isn't linked to your RGS account.");
+	const res = await serverLink(env, id).fetch(new Request("https://relay.internal/api/v1/admin/hub-session", {
+		method: "POST",
+		headers: { [LINKED_BY]: me.username },
+	}));
+	return new Response(res.body, { status: res.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 }
 
 async function removeServer(ownerId: number, id: number): Promise<Response> {

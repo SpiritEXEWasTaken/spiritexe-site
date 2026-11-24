@@ -103,9 +103,17 @@ $("form").addEventListener("submit", async (e) => {
 
 $("logout").onclick = async (e) => { e.preventDefault(); await api("/logout", { method: "POST" }).catch(() => {}); location.reload(); };
 
+// Sent here to sign in from the admin panel: go back there afterwards (only to RGS pages).
+const NEXT = new URLSearchParams(location.search).get("next") || "";
+const goBack = /^\/rgs\/admin\/\?server=\d+$/.test(NEXT);
+
 async function start() {
   const { account } = await api("/me");
-  if (!account) return;
+  if (!account) {
+    if (goBack) say("msg", "Sign in to open the admin panel.");
+    return;
+  }
+  if (goBack) { location.replace(NEXT); return; }
   show("auth", false); show("home"); show("logout");
   $("who").textContent = "Signed in as " + account.username;
   loadServers();
