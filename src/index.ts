@@ -5,7 +5,7 @@ import { rgsRoutes, serverForKey } from "./rgs";
 import { ensureSchema } from "./db";
 import { fail, json } from "./http";
 
-import { LINKED_BY, serverLink } from "./link";
+import { LINKED_BY, LINKED_SUDO, serverLink } from "./link";
 
 export { ServerLink } from "./link";
 
@@ -48,5 +48,6 @@ async function relay(request: Request, url: URL, serverId: number, apiPath: stri
 	forward.headers.set("x-rgs-client-ip", request.headers.get("CF-Connecting-IP") ?? "");
 	// Visitors can never vouch for themselves as the server's owner.
 	forward.headers.delete(LINKED_BY);
+	forward.headers.delete(LINKED_SUDO);
 	return linkFor(serverId).fetch(forward);
 }

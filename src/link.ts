@@ -11,6 +11,8 @@ const MAX_BODY = 900 * 1024;
 /** Internal header: the website account that linked the server, vouched for by this Worker.
  * The server turns it into an owner admin panel session, so it must never come from a visitor. */
 export const LINKED_BY = "x-rgs-linked-by";
+/** Internal header: that account is in sudo mode here (confirmed a fresh 2FA code). */
+export const LINKED_SUDO = "x-rgs-linked-sudo";
 
 /** The relay for one linked server. */
 export function serverLink(env: Env, serverId: number) {
@@ -75,6 +77,7 @@ export class ServerLink extends DurableObject<Env> {
 			body: body ? b64(body) : null,
 			// Only set by the Worker itself (openAdmin in rgs.ts); stripped from visitors' requests.
 			linked_by: request.headers.get(LINKED_BY) || undefined,
+			sudo: request.headers.get(LINKED_BY) && request.headers.get(LINKED_SUDO) === "1" ? true : undefined,
 		};
 
 		return new Promise<Response>((resolve) => {

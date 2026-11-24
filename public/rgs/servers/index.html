@@ -28,6 +28,8 @@
         <code id="mfaSecret" class="secret"></code>
       </div>
       <div id="mfaBox" class="hidden"><label for="code">6-digit code from your authenticator app</label><input id="code" inputmode="numeric" autocomplete="one-time-code"></div>
+      <label class="check" for="remember"><input id="remember" type="checkbox"> Keep me signed in</label>
+      <p class="dim" style="margin:0 0 14px">On this browser, until you haven’t visited for a week (30 days at most). Leave it off on shared computers.</p>
       <button class="primary wide" id="go">Sign In</button>
     </form>
     <div id="msg" class="msg" role="status" aria-live="polite"></div>
@@ -47,8 +49,33 @@
       </div>
       <div id="addMsg" class="msg" role="status" aria-live="polite"></div>
     </div>
+    <div class="card">
+      <h2>Account Security</h2>
+      <p class="dim">Changing your password or 2FA signs you out everywhere else, including admin panels opened from this account. Big actions ask for your 2FA code once, then not again until you leave the site.</p>
+      <details>
+        <summary>Change Password</summary>
+        <form id="pwForm">
+          <label for="pwCurrent">Current password</label><input id="pwCurrent" type="password" autocomplete="current-password" required>
+          <label for="pwNew">New password (10+ characters)</label><input id="pwNew" type="password" autocomplete="new-password" minlength="10" required>
+          <button class="primary" style="margin-top:12px">Change Password</button>
+        </form>
+      </details>
+      <details>
+        <summary>Change 2FA (New Authenticator App)</summary>
+        <button id="mfaStart" type="button" style="margin-top:8px">Get a New Key</button>
+        <form id="mfaForm" class="hidden">
+          <p>Add this key to the new authenticator app (or <a id="newMfaLink">open it in the app</a>), then type the code the <b>new</b> app shows. Your old app stops working.</p>
+          <code id="newMfaSecret" class="secret"></code>
+          <label for="newMfaCode">6-digit code from the new app</label><input id="newMfaCode" inputmode="numeric" autocomplete="one-time-code" required>
+          <button class="primary" style="margin-top:12px">Switch 2FA</button>
+        </form>
+      </details>
+      <div class="row" style="margin-top:12px"><button id="logoutAll" type="button" class="danger">Sign Out Everywhere</button></div>
+      <div id="secMsg" class="msg" role="status" aria-live="polite"></div>
+    </div>
   </section>
 </main>
+<script src="/rgs/sudo.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const show = (id, on = true) => $(id).classList.toggle("hidden", !on);
@@ -56,9 +83,20 @@ const say = (id, text, kind = "") => { $(id).className = "msg " + kind; $(id).te
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ago = (t) => { if (!t) return "never"; const s = Math.floor(Date.now() / 1000) - t; return s < 90 ? "just now" : s < 3600 ? Math.round(s / 60) + " min ago" : s < 86400 ? Math.round(s / 3600) + " h ago" : new Date(t * 1000).toLocaleDateString(); };
 
-async function api(path, opts = {}) {
-  const res = await fetch("/rgs/api" + path, { method: opts.method || "GET", headers: { "Content-Type": "application/json" }, body: opts.body ? JSON.stringify(opts.body) : undefined, credentials: "same-origin" });
+// Big actions answer "sudo_required": ask for a 2FA code once (sudo.js), then try again.
+async function api(path, opts = {}, retried = false) {
+  const res = await fetch("/rgs/api" + path, {
+    method: opts.method || "GET",
+    headers: { "Content-Type": "application/json", ...rgsSudo.headers() },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    credentials: "same-origin",
+  });
   const data = await res.json().catch(() => ({}));
+  if (data.error === "sudo_required" && !retried) {
+    rgsSudo.clear();
+    if (await rgsSudo.confirm()) return api(path, opts, true);
+    throw new Error("Cancelled.");
+  }
   if (!res.ok) throw new Error(data.message || res.statusText);
   return data;
 }
@@ -85,7 +123,7 @@ $("form").addEventListener("submit", async (e) => {
         show("mfaNew"); show("mfaBox"); $("go").textContent = "Create Account";
         return;
       }
-      await api("/signup", { method: "POST", body: { username: $("user").value, password: $("pass").value, totp_secret: secret, code: $("code").value } });
+      await api("/signup", { method: "POST", body: { username: $("user").value, password: $("pass").value, totp_secret: secret, code: $("code").value, remember: $("remember").checked } });
       return start();
     }
     if (!ticket) {
@@ -93,7 +131,7 @@ $("form").addEventListener("submit", async (e) => {
       show("mfaBox"); $("code").focus(); say("msg", "Now the code from your authenticator app.");
       return;
     }
-    await api("/login/2fa", { method: "POST", body: { ticket, code: $("code").value } });
+    await api("/login/2fa", { method: "POST", body: { ticket, code: $("code").value, remember: $("remember").checked } });
     start();
   } catch (err) {
     say("msg", err.message, "err");
@@ -101,7 +139,40 @@ $("form").addEventListener("submit", async (e) => {
   }
 });
 
-$("logout").onclick = async (e) => { e.preventDefault(); await api("/logout", { method: "POST" }).catch(() => {}); location.reload(); };
+$("logout").onclick = async (e) => { e.preventDefault(); rgsSudo.clear(); await api("/logout", { method: "POST" }).catch(() => {}); location.reload(); };
+
+// Account security: all of these are big actions, so they ask for sudo mode first.
+$("pwForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const r = await api("/password", { method: "POST", body: { current: $("pwCurrent").value, password: $("pwNew").value } });
+    $("pwForm").reset();
+    say("secMsg", `Password changed. Signed out of ${r.signed_out_elsewhere} other sign-in${r.signed_out_elsewhere === 1 ? "" : "s"}.`);
+  } catch (err) { say("secMsg", err.message, "err"); }
+});
+let newMfaSecret = "";
+$("mfaStart").onclick = async () => {
+  try {
+    const s = await api("/2fa/secret", { method: "POST" });
+    newMfaSecret = s.totp_secret;
+    $("newMfaSecret").textContent = newMfaSecret.replace(/(.{4})/g, "$1 ").trim();
+    $("newMfaLink").href = s.otpauth_url;
+    show("mfaForm"); $("newMfaCode").focus();
+  } catch (err) { say("secMsg", err.message, "err"); }
+};
+$("mfaForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const r = await api("/2fa", { method: "POST", body: { totp_secret: newMfaSecret, code: $("newMfaCode").value } });
+    $("mfaForm").reset(); show("mfaForm", false); newMfaSecret = "";
+    say("secMsg", `2FA switched to the new app. Signed out of ${r.signed_out_elsewhere} other sign-in${r.signed_out_elsewhere === 1 ? "" : "s"}.`);
+  } catch (err) { say("secMsg", err.message, "err"); }
+});
+$("logoutAll").onclick = async () => {
+  if (!confirm("Sign out on every browser, this one included, and end admin panels opened from this account?")) return;
+  try { await api("/logout/all", { method: "POST" }); rgsSudo.clear(); location.reload(); }
+  catch (err) { say("secMsg", err.message, "err"); }
+};
 
 // Sent here to sign in from the admin panel: go back there afterwards (only to RGS pages).
 const NEXT = new URLSearchParams(location.search).get("next") || "";
@@ -115,7 +186,8 @@ async function start() {
   }
   if (goBack) { location.replace(NEXT); return; }
   show("auth", false); show("home"); show("logout");
-  $("who").textContent = "Signed in as " + account.username;
+  $("who").textContent = "Signed in as " + account.username + (account.remember ? " (kept signed in)" : "");
+  if (!account.sudo) rgsSudo.clear();
   loadServers();
 }
 
@@ -137,12 +209,15 @@ async function loadServers() {
   }).join("") || '<p class="small">No servers linked yet. Link your first one below.</p>';
   document.querySelectorAll("[data-key]").forEach((b) => (b.onclick = async () => {
     if (!confirm("Make a new key? The old one stops working, so update rgs.toml on that server.")) return;
-    const { key } = await api(`/servers/${b.dataset.key}/key`, { method: "POST" });
-    $("keyText").textContent = config(key); show("keyBox"); $("keyBox").scrollIntoView({ behavior: "smooth" });
+    try {
+      const { key } = await api(`/servers/${b.dataset.key}/key`, { method: "POST" });
+      $("keyText").textContent = config(key); show("keyBox"); $("keyBox").scrollIntoView({ behavior: "smooth" });
+    } catch (err) { say("addMsg", err.message, "err"); }
   }));
   document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => {
     if (!confirm("Unlink this server? It stops reporting here (the server itself keeps running).")) return;
-    await api(`/servers/${b.dataset.del}`, { method: "DELETE" }); loadServers();
+    try { await api(`/servers/${b.dataset.del}`, { method: "DELETE" }); loadServers(); }
+    catch (err) { say("addMsg", err.message, "err"); }
   }));
 }
 

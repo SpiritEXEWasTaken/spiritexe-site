@@ -102,6 +102,7 @@
     </div>
   </section>
 </main>
+<script src="/rgs/sudo.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 // Which RGS server this panel manages: /rgs/admin/?server=<id>. Requests go through the
@@ -123,15 +124,60 @@ let me = null;
 let ticket = null;
 const ROLES = ["player", "moderator", "admin", "owner"];
 
-async function api(path, opts = {}) {
+async function api(path, opts = {}, retried = false) {
   const res = await fetch(API + path, {
     method: opts.method || "GET",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
+  // Big actions (bans, roles, maintenance) need sudo mode: a 2FA code once, then retry.
+  if (data.error === "sudo_required" && !retried) {
+    if (!(await enterSudo())) throw new Error("Cancelled.");
+    return api(path, opts, true);
+  }
   if (!res.ok) throw new Error(data.message || res.statusText);
   return data;
+}
+
+const SUDO_WHY = "Bans, role changes and maintenance need your 2FA code. You won’t be asked again until you leave the site.";
+
+// Sudo mode, like GitHub's. Opened from the RGS website: the website's sudo mode (one 2FA code
+// for the whole site, kept in this tab) gets a fresh panel session that's already in sudo mode.
+// Signed in with a server account: that account's 2FA code puts this session in sudo mode.
+async function enterSudo() {
+  if (via !== "hub") {
+    const ok = await rgsSudo.askUntil(SUDO_WHY, code => api("/auth/sudo", { method: "POST", body: { code } }, true));
+    if (ok && me) { me.session = { ...me.session, sudo: true }; showWho(); }
+    return ok;
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!rgsSudo.active() && !(await rgsSudo.confirm(SUDO_WHY))) return false;
+    const res = await fetch(`/rgs/api/servers/${SERVER}/admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...rgsSudo.headers() },
+      body: JSON.stringify({ sudo: true }),
+      credentials: "same-origin",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.token) {
+      const old = token;
+      keep(data.token, "hub");
+      // The old panel session isn't needed any more.
+      fetch(API + "/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + old } }).catch(() => {});
+      if (me) { me.session = { ...me.session, sudo: true }; showWho(); }
+      return true;
+    }
+    if (data.error !== "sudo_required") { alert(data.message || "Couldn’t reach the RGS website."); return false; }
+    rgsSudo.clear(); // the website's sudo mode ended (new sign-in or network); ask again
+  }
+  return false;
+}
+
+function showWho() {
+  if (!me) return;
+  $("who").textContent = me.username + " · " + me.role + (via === "hub" ? " · via your RGS account" : "")
+    + (me.session && me.session.sudo ? " · sudo mode" : "");
 }
 
 const when = t => t ? new Date(t * 1000).toLocaleString() : "never";
@@ -244,7 +290,7 @@ $("logout").onclick = async (e) => {
   try { await api("/auth/logout", { method: "POST" }); } catch {}
   // One account: signing out of the panel also signs out of the RGS website.
   if (via === "hub") await fetch("/rgs/api/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
-  forget(); location.reload();
+  forget(); rgsSudo.clear(); location.reload();
 };
 $("searchBtn").onclick = loadAccounts;
 $("search").addEventListener("keydown", e => { if (e.key === "Enter") loadAccounts(); });
@@ -264,7 +310,7 @@ async function start() {
     return;
   }
   $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logout").classList.remove("hidden");
-  $("who").textContent = me.username + " · " + me.role + (via === "hub" ? " · via your RGS account" : "");
+  showWho();
   loadStats(); loadAccounts(); loadAudit(); loadMaintenance(); loadReports();
   setInterval(loadMaintenance, 15000);
   setInterval(loadReports, 30000);

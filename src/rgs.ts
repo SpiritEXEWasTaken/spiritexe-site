@@ -2,14 +2,17 @@ import { env } from "cloudflare:workers";
 import { checkTotp, hashPassword, newTotpSecret, verifyPassword } from "./auth";
 import { allow } from "./db";
 import { body, fail, hmacHex, ipHash, json, now, randomToken } from "./http";
-import { LINKED_BY, serverLink } from "./link";
+import { LINKED_BY, LINKED_SUDO, serverLink } from "./link";
+import {
+	clearCookies, currentLogin, endLogin, endOtherLogins, inSudo, type Login, LOGINS_SCHEMA, rotateNow, startLogin, startSudo,
+} from "./rgs-session";
 
 // RGS hub, under /rgs: accounts for people who run RGS servers, and their servers.
 // Each server is linked to one account by a secret server key that only that account sees
 // (once, when it's made). The server sends a status report with that key every minute, so an
 // account only ever sees and manages its own servers. 2FA is required for every account.
+// Sign-ins, "Keep me signed in" and sudo mode are in rgs-session.ts.
 
-const SESSION_HOURS = 12;
 let ready = false;
 
 async function schema(db: D1Database): Promise<void> {
@@ -21,8 +24,6 @@ async function schema(db: D1Database): Promise<void> {
 			password_hash TEXT NOT NULL,
 			totp_secret TEXT NOT NULL,
 			created_at INTEGER NOT NULL)`),
-		db.prepare(`CREATE TABLE IF NOT EXISTS rgs_sessions (
-			token_hash TEXT PRIMARY KEY, account_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS rgs_pending (
 			ticket_hash TEXT PRIMARY KEY, account_id INTEGER NOT NULL, expires_at INTEGER NOT NULL)`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS rgs_servers (
@@ -33,9 +34,17 @@ async function schema(db: D1Database): Promise<void> {
 			created_at INTEGER NOT NULL,
 			last_seen INTEGER,
 			report TEXT)`),
+		...LOGINS_SCHEMA.map((sql) => db.prepare(sql)),
 	]);
 	ready = true;
 }
+
+function withCookies(res: Response, cookies: string[]): Response {
+	for (const c of cookies) res.headers.append("Set-Cookie", c);
+	return res;
+}
+
+const sudoRequired = () => fail(403, "sudo_required", "Enter your 2FA code to do that.");
 
 export async function rgsRoutes(request: Request, url: URL): Promise<Response> {
 	await schema(env.DB);
@@ -43,57 +52,65 @@ export async function rgsRoutes(request: Request, url: URL): Promise<Response> {
 	const m = request.method;
 
 	if (path === "/heartbeat" && m === "POST") return heartbeat(request);
+	// Browsers always say where a request comes from; refuse anything sent from another site.
+	const origin = request.headers.get("Origin");
+	if (m !== "GET" && m !== "HEAD" && origin && origin !== url.origin) return fail(403, "forbidden", "That request came from another website.");
+
 	if (path === "/signup/secret" && m === "POST") return signupSecret(request);
 	if (path === "/signup" && m === "POST") return signup(request);
 	if (path === "/login" && m === "POST") return login(request);
 	if (path === "/login/2fa" && m === "POST") return login2fa(request);
-	if (path === "/logout" && m === "POST") return logout(request);
 
-	const me = await sessionAccount(request);
-	if (path === "/me" && m === "GET") return json({ account: me });
+	const { login: me, setCookie } = await currentLogin(request);
+	return withCookies(await signedIn(request, path, m, me), setCookie);
+}
+
+async function signedIn(request: Request, path: string, m: string, me: Login | null): Promise<Response> {
+	if (path === "/logout" && m === "POST") {
+		if (me) await endLogin(me);
+		return withCookies(json({ ok: true }), clearCookies());
+	}
+	if (path === "/me" && m === "GET") {
+		return json({ account: me && { id: me.account_id, username: me.username, remember: me.remember, sudo: await inSudo(request, me) } });
+	}
 	if (!me) return fail(401, "unauthorized", "Sign in again.");
 
-	if (path === "/servers" && m === "GET") return listServers(me.id);
-	if (path === "/servers" && m === "POST") return addServer(request, me.id);
-	let match = path.match(/^\/servers\/(\d+)\/key$/);
-	if (match && m === "POST") return newKey(me.id, Number(match[1]));
-	match = path.match(/^\/servers\/(\d+)\/admin$/);
-	if (match && m === "POST") return openAdmin(me, Number(match[1]));
+	if (path === "/sudo" && m === "POST") return sudo(request, me);
+	if (path === "/servers" && m === "GET") return listServers(me.account_id);
+	let match = path.match(/^\/servers\/(\d+)\/admin$/);
+	if (match && m === "POST") return openAdmin(request, me, Number(match[1]));
+
+	// Everything below is a big action: sudo mode first.
+	const sudoOk = await inSudo(request, me);
+	if (!sudoOk) {
+		const big = (path === "/servers" && m === "POST") || /^\/servers\/\d+(\/key)?$/.test(path) || path === "/password"
+			|| path.startsWith("/2fa") || path === "/logout/all";
+		return big ? sudoRequired() : fail(404, "not_found", "Not found.");
+	}
+	if (path === "/servers" && m === "POST") return addServer(request, me.account_id);
+	match = path.match(/^\/servers\/(\d+)\/key$/);
+	if (match && m === "POST") return newKey(me.account_id, Number(match[1]));
 	match = path.match(/^\/servers\/(\d+)$/);
-	if (match && m === "DELETE") return removeServer(me.id, Number(match[1]));
+	if (match && m === "DELETE") return removeServer(me.account_id, Number(match[1]));
+	if (path === "/password" && m === "POST") return changePassword(request, me);
+	if (path === "/2fa/secret" && m === "POST") return newSecret(me);
+	if (path === "/2fa" && m === "POST") return change2fa(request, me);
+	if (path === "/logout/all" && m === "POST") return logoutEverywhere(me);
 	return fail(404, "not_found", "Not found.");
 }
 
 // ---------- Accounts ----------
 
-function cookie(token: string, maxAge = SESSION_HOURS * 3600): string {
-	return `spx_rgs=${token}; Path=/rgs/api; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
-}
-
-function cookieToken(request: Request): string | null {
-	const match = (request.headers.get("Cookie") ?? "").match(/(?:^|;\s*)spx_rgs=([^;]+)/);
-	return match ? match[1] : null;
-}
-
-async function sessionAccount(request: Request): Promise<{ id: number; username: string } | null> {
-	const token = cookieToken(request);
-	if (!token) return null;
-	return env.DB.prepare(
-		"SELECT a.id, a.username FROM rgs_sessions s JOIN rgs_accounts a ON a.id = s.account_id WHERE s.token_hash = ? AND s.expires_at > ?",
-	).bind(await hmacHex(env.SESSION_SECRET, "rgs:" + token), now()).first<{ id: number; username: string }>();
-}
-
-async function startSession(accountId: number): Promise<Response> {
-	const token = randomToken();
-	await env.DB.prepare("DELETE FROM rgs_sessions WHERE expires_at < ?").bind(now()).run();
-	await env.DB.prepare("INSERT INTO rgs_sessions (token_hash, account_id, expires_at) VALUES (?, ?, ?)")
-		.bind(await hmacHex(env.SESSION_SECRET, "rgs:" + token), accountId, now() + SESSION_HOURS * 3600)
-		.run();
-	return json({ ok: true }, 200, { "Set-Cookie": cookie(token) });
-}
-
 async function limited(request: Request, what: string, max: number): Promise<boolean> {
 	return !(await allow(env.DB, `rgs-${what}:` + (await ipHash(request, env.SESSION_SECRET)), max, 600));
+}
+
+async function signedInResponse(request: Request, accountId: number, remember: unknown): Promise<Response> {
+	return withCookies(json({ ok: true }), await startLogin(request, accountId, remember === true));
+}
+
+function otpauth(secret: string, username: string): string {
+	return `otpauth://totp/RGS:${encodeURIComponent(username || "account")}?secret=${secret}&issuer=RGS`;
 }
 
 /** Sign-up step 1: a fresh authenticator secret (2FA is required). */
@@ -101,13 +118,13 @@ async function signupSecret(request: Request): Promise<Response> {
 	if (await limited(request, "signup", 10)) return fail(429, "rate_limited", "Too many tries. Wait a few minutes.");
 	const { username } = await body<{ username?: string }>(request);
 	const secret = newTotpSecret();
-	return json({ totp_secret: secret, otpauth_url: `otpauth://totp/RGS:${encodeURIComponent(username || "account")}?secret=${secret}&issuer=RGS` });
+	return json({ totp_secret: secret, otpauth_url: otpauth(secret, username ?? "") });
 }
 
 /** Sign-up step 2: the account is made once the authenticator shows a working code. */
 async function signup(request: Request): Promise<Response> {
 	if (await limited(request, "signup", 10)) return fail(429, "rate_limited", "Too many tries. Wait a few minutes.");
-	const b = await body<{ username?: string; password?: string; totp_secret?: string; code?: string }>(request);
+	const b = await body<{ username?: string; password?: string; totp_secret?: string; code?: string; remember?: boolean }>(request);
 	if (!b.username || !/^[A-Za-z0-9_]{3,20}$/.test(b.username)) return fail(400, "bad_request", "Usernames are 3 to 20 letters, numbers or underscores.");
 	if (!b.password || b.password.length < 10) return fail(400, "bad_request", "Use a password of at least 10 characters.");
 	if (!b.totp_secret || !/^[A-Z2-7]{32}$/.test(b.totp_secret)) return fail(400, "bad_request", "Start the 2FA step again.");
@@ -116,7 +133,7 @@ async function signup(request: Request): Promise<Response> {
 	const row = await env.DB.prepare("INSERT INTO rgs_accounts (username, password_hash, totp_secret, created_at) VALUES (?, ?, ?, ?) RETURNING id")
 		.bind(b.username, await hashPassword(b.password), b.totp_secret, now())
 		.first<{ id: number }>();
-	return startSession(row!.id);
+	return signedInResponse(request, row!.id, b.remember);
 }
 
 async function login(request: Request): Promise<Response> {
@@ -133,7 +150,7 @@ async function login(request: Request): Promise<Response> {
 }
 
 async function login2fa(request: Request): Promise<Response> {
-	const { ticket, code } = await body<{ ticket?: string; code?: string }>(request);
+	const { ticket, code, remember } = await body<{ ticket?: string; code?: string; remember?: boolean }>(request);
 	const ticketHash = await hmacHex(env.SESSION_SECRET, "rgs:" + (ticket ?? ""));
 	const p = await env.DB.prepare(
 		"SELECT p.account_id, a.totp_secret FROM rgs_pending p JOIN rgs_accounts a ON a.id = p.account_id WHERE p.ticket_hash = ? AND p.expires_at > ?",
@@ -142,13 +159,65 @@ async function login2fa(request: Request): Promise<Response> {
 	if (!(await allow(env.DB, "rgs-2fa:" + p.account_id, 6, 300))) return fail(429, "rate_limited", "Too many codes tried. Wait a few minutes.");
 	if (!(await checkTotp(p.totp_secret, code ?? ""))) return fail(401, "bad_code", "That code didn't work.");
 	await env.DB.prepare("DELETE FROM rgs_pending WHERE ticket_hash = ?").bind(ticketHash).run();
-	return startSession(p.account_id);
+	return signedInResponse(request, p.account_id, remember);
 }
 
-async function logout(request: Request): Promise<Response> {
-	const token = cookieToken(request);
-	if (token) await env.DB.prepare("DELETE FROM rgs_sessions WHERE token_hash = ?").bind(await hmacHex(env.SESSION_SECRET, "rgs:" + token)).run();
-	return json({ ok: true }, 200, { "Set-Cookie": cookie("", 0) });
+/** Sudo mode: a fresh 2FA code unlocks big actions until this tab leaves the site. */
+async function sudo(request: Request, me: Login): Promise<Response> {
+	const { code } = await body<{ code?: string }>(request);
+	if (!(await allow(env.DB, "rgs-2fa:" + me.account_id, 6, 300))) return fail(429, "rate_limited", "Too many codes tried. Wait a few minutes.");
+	const a = await env.DB.prepare("SELECT totp_secret FROM rgs_accounts WHERE id = ?").bind(me.account_id).first<{ totp_secret: string }>();
+	if (!a || !(await checkTotp(a.totp_secret, code ?? ""))) return fail(401, "bad_code", "That code didn't work.");
+	return json({ sudo: await startSudo(request, me) });
+}
+
+/** Ends the admin panel sessions this website opened on the account's servers (best effort:
+ * a server that's offline right now keeps them until they run out, 12 hours at most). */
+async function endPanelSessions(me: Login): Promise<void> {
+	const { results } = await env.DB.prepare("SELECT id FROM rgs_servers WHERE owner_id = ?").bind(me.account_id).all<{ id: number }>();
+	await Promise.allSettled(results.map((s) => serverLink(env, s.id).fetch(new Request("https://relay.internal/api/v1/admin/hub-signout", {
+		method: "POST",
+		headers: { [LINKED_BY]: me.username },
+	}))));
+}
+
+/** Everything that proves who you are changed: every other sign-in ends, this one gets a new
+ * token, and admin panel sessions opened from this account end too. */
+async function credentialsChanged(me: Login): Promise<Response> {
+	const ended = await endOtherLogins(me.account_id, me.id);
+	await endPanelSessions(me);
+	return withCookies(json({ ok: true, signed_out_elsewhere: ended }), [await rotateNow(me)]);
+}
+
+async function changePassword(request: Request, me: Login): Promise<Response> {
+	const b = await body<{ current?: string; password?: string }>(request);
+	if (await limited(request, "login", 10)) return fail(429, "rate_limited", "Too many tries. Wait a few minutes.");
+	const a = await env.DB.prepare("SELECT password_hash FROM rgs_accounts WHERE id = ?").bind(me.account_id).first<{ password_hash: string }>();
+	if (!a || !(await verifyPassword(b.current ?? "", a.password_hash))) return fail(401, "unauthorized", "Your current password is wrong.");
+	if (!b.password || b.password.length < 10) return fail(400, "bad_request", "Use a password of at least 10 characters.");
+	await env.DB.prepare("UPDATE rgs_accounts SET password_hash = ? WHERE id = ?").bind(await hashPassword(b.password), me.account_id).run();
+	return credentialsChanged(me);
+}
+
+/** 2FA change step 1: a secret for the new authenticator (nothing changes yet). */
+async function newSecret(me: Login): Promise<Response> {
+	const secret = newTotpSecret();
+	return json({ totp_secret: secret, otpauth_url: otpauth(secret, me.username) });
+}
+
+/** 2FA change step 2: switch once the new authenticator shows a working code. */
+async function change2fa(request: Request, me: Login): Promise<Response> {
+	const b = await body<{ totp_secret?: string; code?: string }>(request);
+	if (!b.totp_secret || !/^[A-Z2-7]{32}$/.test(b.totp_secret)) return fail(400, "bad_request", "Start the 2FA change again.");
+	if (!(await checkTotp(b.totp_secret, b.code ?? ""))) return fail(401, "bad_code", "That code didn't work. Use the newest code from the new app.");
+	await env.DB.prepare("UPDATE rgs_accounts SET totp_secret = ? WHERE id = ?").bind(b.totp_secret, me.account_id).run();
+	return credentialsChanged(me);
+}
+
+async function logoutEverywhere(me: Login): Promise<Response> {
+	await endOtherLogins(me.account_id);
+	await endPanelSessions(me);
+	return withCookies(json({ ok: true }), clearCookies());
 }
 
 // ---------- Servers ----------
@@ -199,14 +268,16 @@ async function newKey(ownerId: number, id: number): Promise<Response> {
 
 /** One account: the account that linked a server opens its admin panel with no second sign-in.
  * This account signed in here with 2FA, so the Worker vouches for it over the relay and the
- * server answers with an admin panel session as its owner. */
-async function openAdmin(me: { id: number; username: string }, id: number): Promise<Response> {
-	const own = await env.DB.prepare("SELECT 1 FROM rgs_servers WHERE id = ? AND owner_id = ?").bind(id, me.id).first();
+ * server answers with an admin panel session as its owner. Asked with `{ "sudo": true }` while
+ * this tab is in sudo mode, the panel session starts in sudo mode too (bans, roles, maintenance). */
+async function openAdmin(request: Request, me: Login, id: number): Promise<Response> {
+	const own = await env.DB.prepare("SELECT 1 FROM rgs_servers WHERE id = ? AND owner_id = ?").bind(id, me.account_id).first();
 	if (!own) return fail(404, "not_found", "That server isn't linked to your RGS account.");
-	const res = await serverLink(env, id).fetch(new Request("https://relay.internal/api/v1/admin/hub-session", {
-		method: "POST",
-		headers: { [LINKED_BY]: me.username },
-	}));
+	const { sudo } = await body<{ sudo?: boolean }>(request);
+	if (sudo && !(await inSudo(request, me))) return sudoRequired();
+	const headers: Record<string, string> = { [LINKED_BY]: me.username };
+	if (sudo) headers[LINKED_SUDO] = "1";
+	const res = await serverLink(env, id).fetch(new Request("https://relay.internal/api/v1/admin/hub-session", { method: "POST", headers }));
 	return new Response(res.body, { status: res.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 }
 
