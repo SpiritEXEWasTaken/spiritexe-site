@@ -10,9 +10,10 @@ and the RGS pages under `/rgs`.
 
 ## Look and feel
 
-Everything is styled by `public/style.css`: a light grey page, one colour per project
-(`--lanternfall`, `--pipevr`, `--jellyvr`, `--cleanmyvr`, `--rgs`), Unbounded for headings and
-Geist for text. Both fonts are free (SIL OFL) and served from `public/fonts/`, so the site makes no
+Everything is styled by `public/style.css`. The site is always dark: a deep slate page with light
+text. Each project has one colour (`--lanternfall`, `--pipevr`, `--jellyvr`, `--cleanmyvr`, `--rgs`)
+for its icon tile, plus a lighter version (`--pipevr-text` and so on) for its name and lines, so they
+stay readable on the dark page. Headings use Unbounded and text uses Geist. Both fonts are free (SIL OFL) and served from `public/fonts/`, so the site makes no
 calls to Google.
 
 **Project icons.** A project with its own icon uses an image; the others show a coloured tile with
@@ -20,10 +21,12 @@ their first letter. To add an icon, put a square PNG (at least 128×128) in `pub
 `public/index.html` replace that project's `<span class="icon ...">X</span>` (in the app library
 at the top, and again in its section further down) with
 `<img class="icon" src="/icons/<name>.png" width="128" height="128" alt="">`, like PipeVR's.
-Icons are drawn with sharp pixels (`image-rendering: pixelated`), which suits pixel art.
+Icons are drawn with sharp pixels (`image-rendering: pixelated`), which suits pixel art. An icon
+with a transparent background gets a white tile behind it, so dark lines stay visible on the dark page.
 
 **A new project** is one more `<li>` in the app library list and one more `<article class="project p-...">`
-in "Other projects"; give it a colour in `:root` and a `.p-<name>` class in `style.css`.
+in "Other projects"; give it a colour and a lighter `-text` colour in `:root`, and a `.p-<name>`
+class in `style.css` that sets `--c` and `--c-text`.
 
 ## Run it locally
 
